@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mattmat’s Product & Purchase List — Simple v3</title>
+<title>Mattmat’s Inventory — Simple v3.1</title>
 <style>
   :root{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;}
   body{margin:0;padding:14px;background:#f6f6f6;color:#111}
@@ -28,14 +28,11 @@
   .small{width:120px}
   .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
   .note{font-size:12px;color:#555}
-  .category-title{margin:18px 0 6px;font-weight:600}
   .notes-td textarea{width:100%;height:44px;border-radius:6px;border:1px solid #ccc;padding:6px}
   .touch-check{display:flex;align-items:center;justify-content:center;width:56px;height:44px}
   .touch-check input[type=checkbox]{transform:scale(1.6);width:28px;height:28px}
   .no-print{display:block}
-  /* Purchase table note text visible only in print */
   .note-print{display:none}
-
   @media print{
     header, .controls, .topbar, .save-load-row, .no-print{display:none !important}
     body{margin:0}
@@ -44,14 +41,13 @@
     table{page-break-inside:auto}
     tr{page-break-inside:avoid;page-break-after:auto}
   }
-
   @media (max-width:700px){.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>Mattmat’s Product & Purchase List — Simple v3</h1>
+    <h1>Mattmat’s Inventory — Simple v3.1</h1>
     <div class="note">Single-file — offline. Data saved to localStorage. Optional Google Drive sync.</div>
   </div>
   <div class="controls">
@@ -100,9 +96,7 @@
     <button id="btnLoadPurchase">⤵ Load</button>
     <button id="btnPrint">🖨️ Print Purchase List</button>
   </div>
-  <div id="purchaseContainer" style="overflow:auto">
-    <!-- Single unified purchase table rendered here -->
-  </div>
+  <div id="purchaseContainer" style="overflow:auto"></div>
 </section>
 
 <section id="categoriesView" class="view">
@@ -194,24 +188,30 @@
 <input id="fileInputLocal" type="file" accept="text/csv" style="display:none">
 <input id="fileInputCats" type="file" accept="text/csv" style="display:none">
 
-<!-- Google API libraries -->
+<!-- Load Google client library first (gapi) -->
 <script src="https://apis.google.com/js/api.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- We'll load Identity Services dynamically to control timing -->
+
+<script>
+/*
+  IMPORTANT: Before uploading to GitHub Pages, open this file in a text editor and
+  replace the two placeholders below with your actual (restricted) keys.
+  - GOOGLE_API_KEY: API Key (restrict to your GitHub Pages origin and Drive API)
+  - GOOGLE_CLIENT_ID: OAuth 2.0 Client ID (Web application)
+*/
+const GOOGLE_API_KEY = 'REPLACE_WITH_YOUR_API_KEY';
+const GOOGLE_CLIENT_ID = 'REPLACE_WITH_YOUR_CLIENT_ID.apps.googleusercontent.com';
+const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
+
+// We'll create and append the GIS script dynamically later.
+</script>
 
 <script>
 (function(){
-  // ====== CONFIG - replace with your keys from Google Cloud Console ======
-  const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro';
-  const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com';
-  const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
-  // ======================================================================
-
-  const SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
-
   // Storage keys
-  const KEY = 'mattmat_products_v3';
-  const KEY_CATS = 'mattmat_categories_v3';
-  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v3';
+  const KEY = 'mattmat_products_v3_1';
+  const KEY_CATS = 'mattmat_categories_v3_1';
+  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v3_1';
 
   // Elements
   const productTableBody = document.querySelector('#productTable tbody');
@@ -274,10 +274,9 @@
   let selectedId = null;
   let sortState = {key:null,asc:true};
 
-  // Google API state
+  // Google state
   let gapiInited = false;
-  let gisInited = false;
-  let tokenClient;
+  let tokenClient = null;
   let accessToken = null;
 
   // Helpers
@@ -289,11 +288,9 @@
   function saveSavedLists(lists){localStorage.setItem(KEY_SAVED_PURCHASES, JSON.stringify(lists))}
   function loadSavedLists(){try{return JSON.parse(localStorage.getItem(KEY_SAVED_PURCHASES))||[]}catch(e){return[]}}
 
-  // Cost formula Option B final: Cost = CostPerPack ÷ (Packs × PcsPerPack)
   function computeCost(packs, pcsPerPack, costPerPack){ packs = Number(packs)||0; pcsPerPack = Number(pcsPerPack)||0; costPerPack = Number(costPerPack)||0; if(packs*pcsPerPack === 0) return 0; return costPerPack / (packs * pcsPerPack); }
   function computeSuggested(cost){return (Number(cost)||0) * 1.2}
   function computeMarkup(sell,cost){return (Number(sell)||0) - (Number(cost)||0)}
-
   function formatNumber(v){ if(v===undefined || v===null) return ''; return (Number(v) || 0).toFixed(2); }
   function escapeHtml(s){return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
@@ -326,8 +323,21 @@
     });
   }
 
-  // Init
-  function init(){ loadCats(); load(); renderCategoryOptions(); bindEvents(); refreshTable(); populateSavedLists(); renderCategoriesTable(); initGapi(); }
+  // Init after Google loaded
+  async function init(){
+    loadCats(); load(); renderCategoryOptions(); bindEvents(); refreshTable(); populateSavedLists(); renderCategoriesTable();
+    // initialize gapi client now that gapi is available
+    try{
+      if(typeof gapi !== 'undefined'){
+        await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
+        gapiInited = true;
+      }
+    }catch(err){ console.warn('gapi init error', err); }
+    // create token client using google.accounts (Identity Services)
+    if(typeof google !== 'undefined' && typeof google.accounts !== 'undefined'){
+      tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly', callback: (resp) => { if(resp.error) return console.error('Token error',resp); accessToken = resp.access_token; if(gapiInited) gapi.client.setToken({access_token: accessToken}); alert('Signed in to Google Drive'); } });
+    }
+  }
 
   // Category helpers
   function renderCategoryOptions(selected){ itemCategory.innerHTML=''; const optNew = document.createElement('option'); optNew.value='__add_new__'; optNew.textContent='➕ Add New Category'; itemCategory.appendChild(optNew); categories.forEach(c=>{ const o = document.createElement('option'); o.value=c; o.textContent=c; itemCategory.appendChild(o); }); if(selected) itemCategory.value = selected; else if(categories.length) itemCategory.selectedIndex = 1; else itemCategory.selectedIndex = 0; }
@@ -396,13 +406,11 @@
 
   // Purchase List: single unified table sorted by Category -> Item Name
   function renderPurchaseTable(){ purchaseContainer.innerHTML = ''; const checked = products.filter(p=>p.checked); if(checked.length===0){ purchaseContainer.innerHTML='<div class="note">No items selected for purchase.</div>'; return; }
-    // sort by category then name
     checked.sort((a,b)=>{ const A=(a.category||'').toLowerCase()+ '|' + (a.name||'').toLowerCase(); const B=(b.category||'').toLowerCase()+ '|' + (b.name||'').toLowerCase(); if(A<B) return -1; if(A>B) return 1; return 0; });
     const table = document.createElement('table'); table.id='purchaseTable'; const thead = document.createElement('thead'); thead.innerHTML = '<tr><th></th><th>Category</th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>';
     const tbody = document.createElement('tbody');
     checked.forEach(it=>{
       const tr = document.createElement('tr'); tr.dataset.barcode = it.barcode || it.id;
-      // blank cell
       const tdBlank = document.createElement('td'); tdBlank.style.width='36px';
       const tdCat = document.createElement('td'); tdCat.textContent = it.category || '';
       const tdName = document.createElement('td'); tdName.textContent = it.name || '';
@@ -423,66 +431,80 @@
   // View switching
   function showView(which){ if(which==='purchase'){ productView.classList.remove('active'); categoriesView.classList.remove('active'); purchaseView.classList.add('active'); renderPurchaseTable(); } else if(which==='categories'){ productView.classList.remove('active'); purchaseView.classList.remove('active'); categoriesView.classList.add('active'); renderCategoriesTable(); } else { purchaseView.classList.remove('active'); categoriesView.classList.remove('active'); productView.classList.add('active'); } }
 
-  // Google API init
-  function initGapi(){
-    if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID || GOOGLE_API_KEY.includes('YOUR') || GOOGLE_CLIENT_ID.includes('YOUR')){
-      console.warn('Google API key / client ID not set. Drive features are disabled until you provide them.');
-      return;
-    }
-    gapi.load('client', async () => {
-      await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-      gapiInited = true;
-    });
-
-    // Set up token client
-    tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: SCOPE, callback: (resp) => {
-      if(resp.error) return console.error(resp);
-      accessToken = resp.access_token; gapi.client.setToken({access_token: accessToken}); alert('Signed in to Google Drive');
-    }});
-  }
-
-  // Import from Drive: open picker-like flow (list files and choose the CSV)
+  // Google Drive integration: helpers
   async function importFromDrive(){
-    if(!gapiInited) return alert('Google API not initialized. Make sure you added your API key and client ID.');
-    // request token if needed
-    if(!accessToken) await requestAccessToken();
-    // list files named APP_DRIVE_FILENAME or any csv
-    const res = await gapi.client.drive.files.list({ q: `mimeType='text/csv' or name contains '.csv'`, pageSize: 50, fields: 'files(id,name,createdTime)'});
-    const files = res.result.files || [];
-    const nameList = files.map((f,i)=>`${i+1}. ${f.name} (id:${f.id})`).join('\n');
-    const choice = prompt('Choose file number to import from Drive:\n' + (nameList || 'No CSV files found in Drive.')); if(!choice) return; const idx = Number(choice)-1; if(isNaN(idx) || idx<0 || idx>=files.length) return alert('Invalid selection');
-    const fileId = files[idx].id;
-    // get file content
-    const res2 = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-    const csv = res2.body || res2.result;
-    // parse and import
-    try{ const rows = parseCSV(csv); rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); }); save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Imported '+rows.length+' rows from Drive'); }catch(err){ alert('Import error: '+err.message) }
+    if(typeof gapi === 'undefined' || !gapiInited){ return alert('Google API not ready. Make sure you opened this from https:// or http://localhost and that your keys are set.'); }
+    if(!tokenClient) return alert('Google Identity not initialized.');
+    try{
+      if(!accessToken){ await requestAccessToken(); }
+      // list CSV files
+      const res = await gapi.client.drive.files.list({ q: `mimeType='text/csv' or name contains '.csv'`, pageSize: 50, fields: 'files(id,name,createdTime)'});
+      const files = res.result.files || [];
+      if(files.length===0) return alert('No CSV files found in your Drive.');
+      const nameList = files.map((f,i)=>`${i+1}. ${f.name}`).join('\n');
+      const choice = prompt('Choose file number to import from Drive:\n' + nameList); if(!choice) return;
+      const idx = Number(choice)-1; if(isNaN(idx) || idx<0 || idx>=files.length) return alert('Invalid selection');
+      const fileId = files[idx].id;
+      const res2 = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+      const csv = res2.body || res2.result;
+      const rows = parseCSV(csv);
+      rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); });
+      save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Imported '+rows.length+' rows from Drive');
+    }catch(err){ console.error(err); alert('Drive import error: '+ (err.message||err.statusText || err)); }
   }
 
-  // Export to Drive: search for existing and update or create
-  async function exportToDrive(){ if(!gapiInited) return alert('Google API not initialized. Add your API key and client ID.'); if(!accessToken) await requestAccessToken(); const csv = buildCSVString();
-    // find existing file with APP_DRIVE_FILENAME
-    const list = await gapi.client.drive.files.list({ q: `name='${APP_DRIVE_FILENAME.replace("'","\\'")}'`, fields: 'files(id,name)'});
-    const files = list.result.files || [];
-    if(files.length>0){ // update first
-      const fileId = files[0].id;
-      const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, { method:'PATCH', headers:{ Authorization: 'Bearer ' + accessToken, 'Content-Type':'text/csv' }, body: csv }); if(res.ok) alert('Backup updated on Google Drive'); else alert('Drive update failed: '+res.statusText);
-    }else{
-      // create
-      const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'text/csv' };
-      const form = new FormData(); form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'})); form.append('file', new Blob([csv], {type:'text/csv'}));
-      const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method:'POST', headers:{ Authorization: 'Bearer ' + accessToken }, body: form }); if(res.ok) alert('Backup saved to Google Drive'); else alert('Drive upload failed: '+res.statusText);
-    }
+  async function exportToDrive(){
+    if(typeof gapi === 'undefined' || !gapiInited){ return alert('Google API not ready.'); }
+    if(!tokenClient) return alert('Google Identity not initialized.');
+    try{
+      if(!accessToken) await requestAccessToken();
+      const csv = buildCSVString();
+      // check existing
+      const list = await gapi.client.drive.files.list({ q: `name='${APP_DRIVE_FILENAME.replace("'","\\'")}'`, fields: 'files(id,name)'});
+      const files = list.result.files || [];
+      if(files.length>0){ const fileId = files[0].id; const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, { method:'PATCH', headers:{ Authorization: 'Bearer ' + accessToken, 'Content-Type':'text/csv' }, body: csv }); if(res.ok) alert('Backup updated on Google Drive'); else alert('Drive update failed: '+res.statusText); }
+      else{ const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'text/csv' }; const form = new FormData(); form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'})); form.append('file', new Blob([csv], {type:'text/csv'})); const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method:'POST', headers:{ Authorization: 'Bearer ' + accessToken }, body: form }); if(res.ok) alert('Backup saved to Google Drive'); else alert('Drive upload failed: '+res.statusText); }
+    }catch(err){ console.error(err); alert('Drive export error: '+ (err.message||err.statusText || err)); }
   }
 
   function buildCSVString(){ const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','notes']; const lines=[hdr.join(',')]; products.forEach(p=>{ const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.notes]; lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(',')); }); return lines.join('\n'); }
 
-  async function requestAccessToken(){ return new Promise((resolve,reject)=>{ tokenClient.requestAccessToken({ prompt: 'consent' , callback: (resp)=>{ if(resp.error) return reject(resp); accessToken = resp.access_token; gapi.client.setToken({access_token: accessToken}); resolve(resp); } }); }); }
+  function requestAccessToken(){ return new Promise((resolve,reject)=>{ if(!tokenClient) return reject(new Error('Token client not initialized')); tokenClient.requestAccessToken({ prompt: 'consent' , callback: (resp)=>{ if(resp.error) return reject(resp); accessToken = resp.access_token; if(gapiInited) gapi.client.setToken({access_token: accessToken}); resolve(resp); } }); }); }
 
-  // Local helper to build Drive-style import list (simple)
+  // Init helper that waits for google scripts to be present
+  function loadIdentityScriptAndStart(){
+    if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){
+      // both exist, start app
+      init();
+      return;
+    }
+    // insert the identity script if not present
+    if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){
+      const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ()=>{ console.log('GIS loaded'); if(typeof gapi !== 'undefined') init(); else setTimeout(loadIdentityScriptAndStart,200); };
+      s.onerror = ()=>{ console.warn('Failed to load GIS script'); };
+      document.head.appendChild(s);
+    }
+    // poll until both exist
+    const poll = setInterval(()=>{ if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){ clearInterval(poll); init(); } }, 200);
+  }
 
-  // Init
-  init();
+  // Start after window load
+  window.addEventListener('load', ()=>{
+    // If API keys not set warn and still init (Drive buttons will show message)
+    if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID || GOOGLE_API_KEY.includes('REPLACE') || GOOGLE_CLIENT_ID.includes('REPLACE')){
+      console.warn('Google API key / client ID not set. Drive features will be disabled until you add them in the file.');
+      // still start the app without gapi features
+      init();
+      return;
+    }
+    // init gapi client library loader already included via <script src="https.../api.js"></script>
+    // Wait for gapi to be ready then load GIS
+    function waitGapiThenStart(){ if(typeof gapi !== 'undefined'){ loadIdentityScriptAndStart(); } else setTimeout(waitGapiThenStart,200); }
+    waitGapiThenStart();
+  });
+
+  // Expose some functions for debugging
+  window._mattmat = { products, categories };
 })();
 </script>
 </body>
