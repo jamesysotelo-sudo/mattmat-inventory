@@ -421,6 +421,15 @@ const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
   // Events
   function bindEvents(){ document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click', ()=>{ const key = th.dataset.key; if(sortState.key===key) sortState.asc=!sortState.asc; else {sortState.key=key; sortState.asc=true} refreshTable(); })); searchInput.addEventListener('input', ()=>refreshTable()); rowsPerPage.addEventListener('change', ()=>refreshTable());
 
+// 🔹 Auto-select all text in search box when Enter is pressed
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault(); // prevent form submit / new line
+    searchInput.select(); // highlight all text
+  }
+});
+
+
     btnAdd.addEventListener('click', ()=>openItemModal('add'));
     itemCancel.addEventListener('click', ()=>closeModal(modalItem)); itemSave.addEventListener('click', saveItemFromModal);
     itemCategory.addEventListener('change', ()=>{ if(itemCategory.value==='__add_new__'){ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()); } else { renderCategoryOptions(); } } });
