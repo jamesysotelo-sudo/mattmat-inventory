@@ -333,10 +333,6 @@ const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/r
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 // === DRIVE INITIALIZATION (v3.2.7 logic, restored) ===
-let gapiInited = false;
-let gisInited = false;
-let tokenClient = null;
-
 function maybeEnableDrive() {
   const btn = document.getElementById("btnDriveConnect");
   const status = document.getElementById("driveStatus");
@@ -480,9 +476,7 @@ let selectedId = null;
 let loadedPurchaseListName = '';
 let sortState = { key: null, asc: true };
 
-let gapiInited = false;
-let gisInited = false;
-let tokenClient = null;
+
 
 /* Helpers */
 function uid(){ return 'id_'+Math.random().toString(36).slice(2,9) }
