@@ -3,509 +3,775 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mattmat’s Inventory — Simple v3.1</title>
+<title>Mattmat’s Inventory — Simple v3.1.1 (Fixed Build)</title>
 <style>
-  :root{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;}
-  body{margin:0;padding:14px;background:#f6f6f6;color:#111}
-  header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-  h1{font-size:18px;margin:0}
-  .controls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-  button{background:#fff;border:1px solid #222;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .view{display:none}
-  .view.active{display:block}
-  table{width:100%;border-collapse:collapse;background:#fff}
-  th,td{border:1px solid #222;padding:8px;text-align:left;font-size:13px;vertical-align:middle}
-  th.sortable{cursor:pointer}
-  tr.selected{background:#fff8d6}
-  .topbar{display:flex;gap:8px;margin-bottom:8px;align-items:center}
-  .search{flex:1}
-  input[type=text], input[type=number], select, textarea{padding:8px;border-radius:8px;border:1px solid #bbb;width:100%;box-sizing:border-box}
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
-  .modal{background:#fff;padding:16px;border-radius:10px;min-width:320px;max-width:900px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .modal h3{margin-top:0}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .small{width:120px}
-  .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-  .note{font-size:12px;color:#555}
-  .notes-td textarea{width:100%;height:44px;border-radius:6px;border:1px solid #ccc;padding:6px}
-  .touch-check{display:flex;align-items:center;justify-content:center;width:56px;height:44px}
-  .touch-check input[type=checkbox]{transform:scale(1.6);width:28px;height:28px}
-  .no-print{display:block}
-  .note-print{display:none}
-  @media print{
-    header, .controls, .topbar, .save-load-row, .no-print{display:none !important}
-    body{margin:0}
-    textarea.note-input{display:none !important}
-    .note-print{display:block;padding:6px;border:0}
-    table{page-break-inside:auto}
-    tr{page-break-inside:avoid;page-break-after:auto}
+  /* Minimalist light theme */
+  :root{
+    --bg:#f2f4f7;
+    --card:#ffffff;
+    --muted:#6b7280;
+    --border:#d1d5db;
+    --accent:#111827;
+    --success:#16a34a;
   }
-  @media (max-width:700px){.form-grid{grid-template-columns:1fr}}
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; background:var(--bg); color:var(--accent); -webkit-font-smoothing:antialiased;}
+  .app{max-width:1100px;margin:20px auto;padding:18px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  header h1{font-size:18px;margin:0;}
+  .subtitle{font-size:12px;color:var(--muted);}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  button, .btn{background:var(--card);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;}
+  .btn.primary{background:linear-gradient(#111827,#111827);color:#fff;border:0;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:12px;}
+  @media(max-width:900px){ .layout{grid-template-columns:1fr;}}
+  .search-row{display:flex;gap:8px;margin-bottom:10px;align-items:center;}
+  input[type="search"], input[type="text"], input[type="number"], select, textarea{
+    padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:transparent;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th, td{padding:8px;border-bottom:1px solid #eee;text-align:left;}
+  th{cursor:pointer;user-select:none;background:transparent;position:relative;}
+  th .sort-ind{font-size:11px;color:var(--muted);margin-left:6px;}
+  .row-actions{display:flex;gap:6px;align-items:center;}
+  .small{font-size:12px;padding:6px 8px;border-radius:6px;}
+  .muted{color:var(--muted);}
+  .category-pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--border);font-size:12px;background:#fff;}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,0.45);display:flex;align-items:center;justify-content:center;z-index:30;}
+  .modal{width:520px;max-width:96%;background:var(--card);border-radius:10px;padding:14px;border:1px solid var(--border);box-shadow:0 8px 24px rgba(15,23,42,0.08);}
+  .modal h3{margin:0 0 8px 0;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+  .flex{display:flex;gap:8px;align-items:center;}
+  .right{margin-left:auto;}
+  .purchase-list{display:flex;flex-direction:column;gap:8px;}
+  .purchase-item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px;border:1px dashed var(--border);border-radius:8px;}
+  .hide-print{display:block;}
+  @media print{
+    body{background:white;}
+    .hide-print{display:none !important;}
+    .panel{box-shadow:none;border:0;}
+    header{display:none;}
+  }
+  footer{font-size:12px;color:var(--muted);margin-top:12px;text-align:center;}
+  /* small helpers */
+  .overflow-x{overflow:auto;}
+  .note{font-size:12px;color:var(--muted);}
+  .danger{color:#b91c1c;}
+  .success{color:var(--success);}
 </style>
 </head>
 <body>
-<header>
-  <div>
-    <h1>Mattmat’s Inventory — Simple v3.1</h1>
-    <div class="note">Single-file — offline. Data saved to localStorage. Optional Google Drive sync.</div>
-  </div>
-  <div class="controls">
-    <button id="btnAdd">➕ Add Item</button>
-    <button id="btnEditItem" disabled>✏️ Edit Item</button>
-    <button id="btnEditCost" disabled>💰 Edit Cost</button>
-    <button id="btnUncheck">🧹 Uncheck All</button>
-    <button id="btnImportLocal">📂 Import CSV</button>
-    <button id="btnExportLocal">💾 Export CSV</button>
-    <button id="btnImportDrive">☁️ Import from Drive</button>
-    <button id="btnExportDrive">☁️ Export to Drive</button>
-    <button id="btnCategories">📂 Categories</button>
-    <button id="btnGoPurchase">🛒 Purchase List</button>
-  </div>
-</header>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Mattmat’s Inventory — Simple v3.1.1 (Fixed Build)</h1>
+        <div class="subtitle">Single-file offline inventory — localStorage + optional Drive import/export</div>
+      </div>
+      <div class="controls hide-print">
+        <button id="btnAdd" class="btn">+ Add Item</button>
+        <button id="btnImport" class="btn">Import CSV</button>
+        <button id="btnExport" class="btn">Export CSV</button>
+        <button id="btnDriveImport" class="btn">Drive Import</button>
+        <button id="btnDriveExport" class="btn">Drive Export</button>
+        <button id="btnCategories" class="btn">Categories</button>
+      </div>
+    </header>
 
-<section id="productView" class="view active">
-  <div class="topbar">
-    <input id="search" class="search" type="text" placeholder="Search by Item Name or Barcode...">
-    <label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
-  </div>
-  <div style="overflow:auto;max-height:62vh">
-    <table id="productTable">
-      <thead>
-        <tr>
-          <th class="sortable" data-key="category">Category</th>
-          <th class="sortable" data-key="barcode">Barcode</th>
-          <th class="sortable" data-key="name">Item Name</th>
-          <th style="width:72px">✅</th>
-          <th class="sortable" data-key="cost">Cost</th>
-          <th class="sortable" data-key="sellPrice">Sell Price</th>
-          <th>Suggested Sell Price</th>
-          <th>Mark-Up</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
+    <div class="layout">
+      <main>
+        <div class="panel">
+          <div class="search-row">
+            <input id="search" type="search" placeholder="Search products, barcode, notes..." style="flex:1" />
+            <select id="filterCategory">
+              <option value="">All categories</option>
+            </select>
+            <select id="rowsPerPage">
+              <option>25</option><option>50</option><option>100</option>
+            </select>
+          </div>
 
-<section id="purchaseView" class="view">
-  <div class="save-load-row no-print" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-    <button id="btnBack">◀ Back</button>
-    <button id="btnSavePurchase">💾 Save Purchase List</button>
-    <select id="savedLists"></select>
-    <button id="btnLoadPurchase">⤵ Load</button>
-    <button id="btnPrint">🖨️ Print Purchase List</button>
-  </div>
-  <div id="purchaseContainer" style="overflow:auto"></div>
-</section>
+          <div class="overflow-x">
+            <table id="productTable" aria-label="Products">
+              <thead>
+                <tr>
+                  <th data-key="barcode">Barcode <span class="sort-ind"></span></th>
+                  <th data-key="name">Product Name <span class="sort-ind"></span></th>
+                  <th data-key="category">Category <span class="sort-ind"></span></th>
+                  <th data-key="stocks">Stocks <span class="sort-ind"></span></th>
+                  <th data-key="sell">Sell/pc <span class="sort-ind"></span></th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="productBody">
+                <!-- rows injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-<section id="categoriesView" class="view">
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-    <button id="btnBackFromCategories">◀ Back</button>
-    <button id="btnAddCategory">➕ Add Category</button>
-    <button id="btnExportCategories">💾 Export Categories</button>
-    <button id="btnImportCategories">📂 Import Categories</button>
-  </div>
-  <div style="overflow:auto;max-height:68vh">
-    <table id="categoriesTable"><thead><tr><th>Category</th><th>Actions</th></tr></thead><tbody></tbody></table>
-  </div>
-</section>
+        <div style="margin-top:12px" class="panel hide-print">
+          <strong>Notes</strong>
+          <div class="note">Use the Purchase List panel on the right to build a shopping/purchase list. You can check items, add notes, save, load or print it.</div>
+        </div>
+      </main>
 
-<!-- Add/Edit Item Modal -->
-<div id="modalItem" class="modal-backdrop">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3 id="modalItemTitle">Add Item</h3>
-    <div class="form-grid">
-      <div>
-        <label>Category</label>
-        <select id="itemCategory"></select>
-      </div>
-      <div>
-        <label>Barcode</label>
-        <input id="itemBarcode" type="text">
-      </div>
-      <div style="grid-column:1/3">
-        <label>Item Name</label>
-        <input id="itemName" type="text">
-      </div>
-      <div>
-        <label>Packs</label>
-        <input id="itemPacks" type="number" min="0" value="1">
-      </div>
-      <div>
-        <label>Pcs per Pack</label>
-        <input id="itemPcsPerPack" type="number" min="1" value="1">
-      </div>
-      <div>
-        <label>Cost per Pack</label>
-        <input id="itemCostPerPack" type="number" min="0" step="any" value="1">
-      </div>
-      <div>
-        <label>Cost (auto)</label>
-        <input id="itemCost" type="number" readonly>
-      </div>
-      <div>
-        <label>Sell Price (manual)</label>
-        <input id="itemSellPrice" type="number" min="0" step="any" value="0">
-      </div>
+      <aside>
+        <div class="panel">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <h3 style="margin:0;font-size:15px;">Purchase List</h3>
+            <div class="right">
+              <button id="btnNewPurchase" class="small">New</button>
+              <button id="btnSavePurchase" class="small">Save</button>
+              <button id="btnLoadPurchase" class="small">Load</button>
+              <button id="btnPrintPurchase" class="small">Print</button>
+            </div>
+          </div>
+
+          <div class="purchase-list" id="purchaseListContainer">
+            <!-- purchase items -->
+          </div>
+
+          <div style="margin-top:8px;" class="hide-print">
+            <button id="btnAddSelected" class="btn">Add Selected Items</button>
+            <div class="note" style="margin-top:8px;">Select items in product list using checkboxes (in Actions) then "Add Selected Items".</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px;">
+          <strong>Import/Export</strong>
+          <div style="margin-top:8px" class="note">CSV format: barcode,name,category,cost_per_pack,cost_per_pc,sell_per_pc,stocks,notes</div>
+          <input id="fileInput" type="file" accept=".csv" style="margin-top:8px" class="hide-print" />
+        </div>
+      </aside>
     </div>
-    <div class="btn-row">
-      <button id="itemCancel">Cancel</button>
-      <button id="itemSave">Save</button>
-    </div>
+
+    <footer>Mattmat’s Inventory — Simple v3.1.1 (Fixed Build) • Offline localStorage first • Drive optional</footer>
   </div>
-</div>
 
-<!-- Edit Cost Modal -->
-<div id="modalEditCost" class="modal-backdrop">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3>Edit Cost</h3>
-    <div class="form-grid">
-      <div>
-        <label>Packs</label>
-        <input id="editPacks" type="number" min="0">
-      </div>
-      <div>
-        <label>Pcs per Pack</label>
-        <input id="editPcsPerPack" type="number" min="1">
-      </div>
-      <div>
-        <label>Cost per Pack</label>
-        <input id="editCostPerPack" type="number" min="0" step="any">
-      </div>
-      <div>
-        <label>Cost (auto)</label>
-        <input id="editCost" type="number" readonly>
-      </div>
-    </div>
-    <div class="btn-row">
-      <button id="editCancel">Cancel</button>
-      <button id="editSave">Save Cost</button>
-    </div>
-  </div>
-</div>
-
-<input id="fileInputLocal" type="file" accept="text/csv" style="display:none">
-<input id="fileInputCats" type="file" accept="text/csv" style="display:none">
-
-<!-- Load Google client library first (gapi) -->
-<script src="https://apis.google.com/js/api.js"></script>
-<!-- We'll load Identity Services dynamically to control timing -->
-
-<script>
-/*
-  IMPORTANT: Before uploading to GitHub Pages, open this file in a text editor and
-  replace the two placeholders below with your actual (restricted) keys.
-  - GOOGLE_API_KEY: API Key (restrict to your GitHub Pages origin and Drive API)
-  - GOOGLE_CLIENT_ID: OAuth 2.0 Client ID (Web application)
-*/
-const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro';
-const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com';
-const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
-
-// We'll create and append the GIS script dynamically later.
-</script>
+  <!-- Modals will be injected dynamically -->
+  <div id="modals"></div>
 
 <script>
 (function(){
-  // Storage keys
-  const KEY = 'mattmat_products_v3_1';
-  const KEY_CATS = 'mattmat_categories_v3_1';
-  const KEY_SAVED_PURCHASES = 'mattmat_saved_purchase_lists_v3_1';
+  'use strict';
 
-  // Elements
-  const productTableBody = document.querySelector('#productTable tbody');
-  const searchInput = document.getElementById('search');
-  const btnAdd = document.getElementById('btnAdd');
-  const btnEditItem = document.getElementById('btnEditItem');
-  const btnEditCost = document.getElementById('btnEditCost');
-  const btnUncheck = document.getElementById('btnUncheck');
-  const btnImportLocal = document.getElementById('btnImportLocal');
-  const btnExportLocal = document.getElementById('btnExportLocal');
-  const btnImportDrive = document.getElementById('btnImportDrive');
-  const btnExportDrive = document.getElementById('btnExportDrive');
-  const btnCategories = document.getElementById('btnCategories');
-  const btnGoPurchase = document.getElementById('btnGoPurchase');
-  const productView = document.getElementById('productView');
-  const purchaseView = document.getElementById('purchaseView');
-  const categoriesView = document.getElementById('categoriesView');
-  const btnBack = document.getElementById('btnBack');
-  const btnPrint = document.getElementById('btnPrint');
-  const purchaseContainer = document.getElementById('purchaseContainer');
-  const savedListsSelect = document.getElementById('savedLists');
-  const btnSavePurchase = document.getElementById('btnSavePurchase');
-  const btnLoadPurchase = document.getElementById('btnLoadPurchase');
-  const fileInputLocal = document.getElementById('fileInputLocal');
-  const fileInputCats = document.getElementById('fileInputCats');
-  const rowsPerPage = document.getElementById('rowsPerPage');
+  /* ---------- Configuration placeholders for Drive ---------- */
+  const GOOGLE_API_KEY = 'AIzaSyBQ9QgFBIkvxvHMV-3wUr7qXwitxwBp0Ro';
+  const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.googleusercontent.com';
 
-  // Modals & item fields
-  const modalItem = document.getElementById('modalItem');
-  const modalItemTitle = document.getElementById('modalItemTitle');
-  const itemCategory = document.getElementById('itemCategory');
-  const itemBarcode = document.getElementById('itemBarcode');
-  const itemName = document.getElementById('itemName');
-  const itemPacks = document.getElementById('itemPacks');
-  const itemPcsPerPack = document.getElementById('itemPcsPerPack');
-  const itemCostPerPack = document.getElementById('itemCostPerPack');
-  const itemCost = document.getElementById('itemCost');
-  const itemSellPrice = document.getElementById('itemSellPrice');
-  const itemCancel = document.getElementById('itemCancel');
-  const itemSave = document.getElementById('itemSave');
+  /* ---------- LocalStorage Keys ---------- */
+  const LS_PRODUCTS = 'mattmat_products_v3';
+  const LS_CATEGORIES = 'mattmat_categories_v3';
+  const LS_PURCHASES = 'mattmat_purchases_v3';
 
-  const modalEditCost = document.getElementById('modalEditCost');
-  const editPacks = document.getElementById('editPacks');
-  const editPcsPerPack = document.getElementById('editPcsPerPack');
-  const editCostPerPack = document.getElementById('editCostPerPack');
-  const editCost = document.getElementById('editCost');
-  const editCancel = document.getElementById('editCancel');
-  const editSave = document.getElementById('editSave');
-
-  // Categories
-  const btnBackFromCategories = document.getElementById('btnBackFromCategories');
-  const btnAddCategory = document.getElementById('btnAddCategory');
-  const btnExportCategories = document.getElementById('btnExportCategories');
-  const btnImportCategories = document.getElementById('btnImportCategories');
-  const categoriesTableBody = document.querySelector('#categoriesTable tbody');
-
-  // State
+  /* ---------- State ---------- */
   let products = [];
   let categories = [];
-  let selectedId = null;
-  let sortState = {key:null,asc:true};
+  let purchases = {}; // saved purchase lists by name
+  let ui = {
+    productTable: document.getElementById('productTable'),
+    productBody: document.getElementById('productBody'),
+    search: document.getElementById('search'),
+    filterCategory: document.getElementById('filterCategory'),
+    rowsPerPage: document.getElementById('rowsPerPage'),
+    fileInput: document.getElementById('fileInput'),
+    modals: document.getElementById('modals'),
+    purchaseListContainer: document.getElementById('purchaseListContainer')
+  };
 
-  // Google state
-  let gapiInited = false;
-  let tokenClient = null;
-  let accessToken = null;
+  /* ---------- Utilities ---------- */
+  const uid = (n=8) => Math.random().toString(36).slice(2,2+n);
+  const saveProducts = ()=> localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
+  const saveCategories = ()=> localStorage.setItem(LS_CATEGORIES, JSON.stringify(categories));
+  const savePurchases = ()=> localStorage.setItem(LS_PURCHASES, JSON.stringify(purchases));
 
-  // Helpers
-  function uid(){return 'id_'+Math.random().toString(36).slice(2,9)}
-  function save(){localStorage.setItem(KEY, JSON.stringify(products))}
-  function load(){try{products = JSON.parse(localStorage.getItem(KEY))||[]}catch(e){products=[]}}
-  function saveCats(){localStorage.setItem(KEY_CATS, JSON.stringify(categories))}
-  function loadCats(){try{categories = JSON.parse(localStorage.getItem(KEY_CATS))||[]}catch(e){categories=[]}}
-  function saveSavedLists(lists){localStorage.setItem(KEY_SAVED_PURCHASES, JSON.stringify(lists))}
-  function loadSavedLists(){try{return JSON.parse(localStorage.getItem(KEY_SAVED_PURCHASES))||[]}catch(e){return[]}}
+  const loadProducts = ()=>{
+    try{
+      const raw = localStorage.getItem(LS_PRODUCTS);
+      products = raw ? JSON.parse(raw) : sampleProducts();
+    }catch(e){ products = sampleProducts(); }
+  };
+  const loadCategories = ()=>{
+    try {
+      const raw = localStorage.getItem(LS_CATEGORIES);
+      categories = raw ? JSON.parse(raw) : sampleCategories();
+    }catch(e){ categories = sampleCategories(); }
+  };
+  const loadPurchases = ()=>{
+    try{
+      const raw = localStorage.getItem(LS_PURCHASES);
+      purchases = raw ? JSON.parse(raw) : {};
+    }catch(e){ purchases = {}; }
+  };
 
-  function computeCost(packs, pcsPerPack, costPerPack){ packs = Number(packs)||0; pcsPerPack = Number(pcsPerPack)||0; costPerPack = Number(costPerPack)||0; if(packs*pcsPerPack === 0) return 0; return costPerPack / (packs * pcsPerPack); }
-  function computeSuggested(cost){return (Number(cost)||0) * 1.2}
-  function computeMarkup(sell,cost){return (Number(sell)||0) - (Number(cost)||0)}
-  function formatNumber(v){ if(v===undefined || v===null) return ''; return (Number(v) || 0).toFixed(2); }
-  function escapeHtml(s){return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  /* ---------- Sample Data (if empty) ---------- */
+  function sampleCategories(){
+    return [
+      { id:'c-general', name:'General' },
+      { id:'c-food', name:'Food' },
+      { id:'c-house', name:'Household' }
+    ];
+  }
+  function sampleProducts(){
+    return [
+      { id:uid(6), barcode:'000001', name:'Canned Sardines', category:'Food', cost_pack:120.00, cost_pc:12.00, sell:15.00, stocks:10, notes:'' },
+      { id:uid(6), barcode:'000002', name:'Dishwashing Liquid 500ml', category:'Household', cost_pack:150.00, cost_pc:150.00, sell:175.00, stocks:5, notes:'' },
+    ];
+  }
 
-  // Render product table
-  function refreshTable(){
-    productTableBody.innerHTML = '';
-    let q = searchInput.value.trim().toLowerCase();
-    let rows = products.slice();
-    if(sortState.key){ rows.sort((a,b)=>{ let A = a[sortState.key]; let B = b[sortState.key]; if(typeof A === 'string') A=A.toLowerCase(); if(typeof B==='string') B=B.toLowerCase(); if(A<B) return sortState.asc?-1:1; if(A>B) return sortState.asc?1:-1; return 0; }); }
-    if(q){rows = rows.filter(it=> (it.name||'').toLowerCase().includes(q) || (it.barcode||'').toLowerCase().includes(q))}
-    const max = Number(rowsPerPage.value)||rows.length;
-    rows.slice(0,max).forEach(it=>{
-      const tr = document.createElement('tr'); tr.dataset.id = it.id; if(it.id === selectedId) tr.classList.add('selected');
-      const tdCat = document.createElement('td'); tdCat.textContent = it.category || '';
-      const tdBarcode = document.createElement('td'); tdBarcode.textContent = it.barcode || '';
-      const tdName = document.createElement('td'); tdName.textContent = it.name || '';
-      const chkCell = document.createElement('td'); chkCell.style.textAlign='center'; chkCell.className='touch-check';
-      const chk = document.createElement('input'); chk.type='checkbox'; chk.dataset.id=it.id; chk.checked = !!it.checked; chk.addEventListener('change', ()=>{ it.checked = chk.checked; save(); });
-      chkCell.addEventListener('click',(e)=>{ if(e.target.tagName.toLowerCase()!=='input'){ chk.checked = !chk.checked; chk.dispatchEvent(new Event('change')); } });
-      chkCell.appendChild(chk);
-      const tdCost = document.createElement('td'); tdCost.textContent = formatNumber(it.cost);
-      const tdSell = document.createElement('td'); tdSell.textContent = formatNumber(it.sellPrice);
-      const tdSuggested = document.createElement('td'); tdSuggested.textContent = formatNumber(it.suggestedSellPrice);
-      const tdMarkup = document.createElement('td'); tdMarkup.textContent = formatNumber(it.markup);
-
-      tr.appendChild(tdCat); tr.appendChild(tdBarcode); tr.appendChild(tdName); tr.appendChild(chkCell); tr.appendChild(tdCost); tr.appendChild(tdSell); tr.appendChild(tdSuggested); tr.appendChild(tdMarkup);
-
-      tr.addEventListener('click', (e)=>{ if(e.target.tagName.toLowerCase() === 'input') return; selectedId = it.id; btnEditCost.disabled=false; btnEditItem.disabled=false; refreshTable(); });
-      productTableBody.appendChild(tr);
+  /* ---------- Rendering ---------- */
+  function refreshCategoryFilter(){
+    const sel = ui.filterCategory;
+    sel.innerHTML = '<option value="">All categories</option>';
+    categories.forEach(c=>{
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
     });
   }
 
-  // Init after Google loaded
-  async function init(){
-    loadCats(); load(); renderCategoryOptions(); bindEvents(); refreshTable(); populateSavedLists(); renderCategoriesTable();
-    // initialize gapi client now that gapi is available
-    try{
-      if(typeof gapi !== 'undefined'){
-        await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-        gapiInited = true;
-      }
-    }catch(err){ console.warn('gapi init error', err); }
-    // create token client using google.accounts (Identity Services)
-    if(typeof google !== 'undefined' && typeof google.accounts !== 'undefined'){
-      tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly', callback: (resp) => { if(resp.error) return console.error('Token error',resp); accessToken = resp.access_token; if(gapiInited) gapi.client.setToken({access_token: accessToken}); alert('Signed in to Google Drive'); } });
-    }
-  }
+  let currentSort = { key:'name', dir: 'asc' };
+  function renderProducts(){
+    const tbody = ui.productBody;
+    tbody.innerHTML = '';
+    const q = ui.search.value.trim().toLowerCase();
+    const catFilter = ui.filterCategory.value;
+    const rows = products.filter(p=>{
+      if(catFilter && p.category !== catFilter) return false;
+      if(!q) return true;
+      return (p.name||'').toString().toLowerCase().includes(q) ||
+             (p.barcode||'').toString().toLowerCase().includes(q) ||
+             (p.notes||'').toString().toLowerCase().includes(q) ||
+             (p.category||'').toString().toLowerCase().includes(q);
+    });
 
-  // Category helpers
-  function renderCategoryOptions(selected){ itemCategory.innerHTML=''; const optNew = document.createElement('option'); optNew.value='__add_new__'; optNew.textContent='➕ Add New Category'; itemCategory.appendChild(optNew); categories.forEach(c=>{ const o = document.createElement('option'); o.value=c; o.textContent=c; itemCategory.appendChild(o); }); if(selected) itemCategory.value = selected; else if(categories.length) itemCategory.selectedIndex = 1; else itemCategory.selectedIndex = 0; }
-  function addCategory(name){ if(!name) return; if(!categories.includes(name)){ categories.push(name); saveCats(); renderCategoryOptions(name); renderCategoriesTable(); } }
-  function renderCategoriesTable(){ categoriesTableBody.innerHTML=''; categories.forEach((c,i)=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${escapeHtml(c)}</td><td><button data-i="${i}" class="edit-cat">Edit</button> <button data-i="${i}" class="del-cat">Delete</button></td>`; categoriesTableBody.appendChild(tr); }); categoriesTableBody.querySelectorAll('.edit-cat').forEach(btn=>btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.i); const newName = prompt('Edit category', categories[i]); if(newName && newName.trim()){ const old = categories[i]; categories[i]=newName.trim(); saveCats(); renderCategoryOptions(); renderCategoriesTable(); } })); categoriesTableBody.querySelectorAll('.del-cat').forEach(btn=>btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.i); if(!confirm('Delete category and remove from products?')) return; const name = categories[i]; categories.splice(i,1); products.forEach(p=>{ if(p.category===name) p.category=''; }); saveCats(); save(); renderCategoryOptions(); renderCategoriesTable(); refreshTable(); })); }
+    rows.sort((a,b)=>{
+      const k = currentSort.key;
+      let va = a[k], vb = b[k];
+      if(typeof va === 'string') va = va.toLowerCase();
+      if(typeof vb === 'string') vb = vb.toLowerCase();
+      if(va < vb) return currentSort.dir === 'asc' ? -1 : 1;
+      if(va > vb) return currentSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
 
-  // Events
-  function bindEvents(){ document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click', ()=>{ const key = th.dataset.key; if(sortState.key===key) sortState.asc=!sortState.asc; else {sortState.key=key; sortState.asc=true} refreshTable(); })); searchInput.addEventListener('input', ()=>refreshTable()); rowsPerPage.addEventListener('change', ()=>refreshTable());
-
-    btnAdd.addEventListener('click', ()=>openItemModal('add'));
-    itemCancel.addEventListener('click', ()=>closeModal(modalItem)); itemSave.addEventListener('click', saveItemFromModal);
-    itemCategory.addEventListener('change', ()=>{ if(itemCategory.value==='__add_new__'){ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()); } else { renderCategoryOptions(); } } });
-    [itemPacks,itemPcsPerPack,itemCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ itemCost.value = computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value).toFixed(4); }));
-
-    btnEditItem.addEventListener('click', ()=>{ if(!selectedId) return; openItemModal('edit'); });
-    btnEditCost.addEventListener('click', ()=>{ if(!selectedId) return; openEditCostModal(); });
-    editCancel.addEventListener('click', ()=>closeModal(modalEditCost)); editSave.addEventListener('click', saveEditedCost);
-    [editPacks,editPcsPerPack,editCostPerPack].forEach(el=>el.addEventListener('input', ()=>{ editCost.value = computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4); }));
-
-    btnUncheck.addEventListener('click', ()=>{ if(!confirm('Uncheck ALL items?')) return; products.forEach(p=>p.checked=false); save(); refreshTable(); });
-
-    btnImportLocal.addEventListener('click', ()=>fileInputLocal.click()); fileInputLocal.addEventListener('change', handleFileImportLocal);
-    btnExportLocal.addEventListener('click', exportCSVLocal);
-
-    btnImportDrive.addEventListener('click', importFromDrive);
-    btnExportDrive.addEventListener('click', exportToDrive);
-
-    btnCategories.addEventListener('click', ()=>showView('categories'));
-    btnBackFromCategories.addEventListener('click', ()=>showView('product'));
-    btnAddCategory.addEventListener('click', ()=>{ const n = prompt('New category name:'); if(n && n.trim()){ addCategory(n.trim()) } });
-    btnExportCategories.addEventListener('click', exportCategoriesCSV);
-    btnImportCategories.addEventListener('click', ()=>fileInputCats.click()); fileInputCats.addEventListener('change', handleCategoriesImport);
-
-    btnGoPurchase.addEventListener('click', ()=>showView('purchase'));
-    btnBack.addEventListener('click', ()=>showView('product'));
-    btnPrint.addEventListener('click', ()=>window.print());
-
-    btnSavePurchase.addEventListener('click', savePurchaseList); btnLoadPurchase.addEventListener('click', loadSelectedPurchaseList);
-
-    document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); exportCSVLocal(); } }); }
-
-  // Modal helpers
-  function showModal(el){ el.style.display='flex'; }
-  function closeModal(el){ el.style.display='none'; }
-
-  // Open add/edit item modal
-  function openItemModal(mode){ renderCategoryOptions(); if(mode==='add'){ modalItemTitle.textContent='Add Item'; itemCategory.value = categories.length? categories[0] : '__add_new__'; itemBarcode.value=''; itemName.value=''; itemPacks.value=1; itemPcsPerPack.value=1; itemCostPerPack.value=1; itemCost.value = computeCost(1,1,1).toFixed(4); itemSellPrice.value = 0; itemSave.dataset.mode='add'; showModal(modalItem); } else { const p = products.find(x=>x.id===selectedId); if(!p) return; modalItemTitle.textContent='Edit Item'; renderCategoryOptions(p.category); itemCategory.value = p.category || (categories[0]||''); itemBarcode.value = p.barcode||''; itemName.value = p.name||''; itemPacks.value = p.packs||1; itemPcsPerPack.value = p.pcsPerPack||1; itemCostPerPack.value = p.costPerPack||1; itemCost.value = computeCost(itemPacks.value,itemPcsPerPack.value,itemCostPerPack.value).toFixed(4); itemSellPrice.value = p.sellPrice||0; itemSave.dataset.mode='edit'; showModal(modalItem); } }
-
-  // Save item from modal (add/edit)
-  function saveItemFromModal(){ const mode = itemSave.dataset.mode||'add'; const cat = itemCategory.value==='__add_new__'? prompt('New category name:') : itemCategory.value; if(cat==='__add_new__' || !cat){ alert('Please choose or add a category.'); return; } if(!categories.includes(cat)) addCategory(cat); const barcode = itemBarcode.value.trim(); const name = itemName.value.trim(); const packs = Number(itemPacks.value)||0; const pcs = Number(itemPcsPerPack.value)||0; const cpp = Number(itemCostPerPack.value)||0; const sell = Number(itemSellPrice.value)||0; const costVal = computeCost(packs,pcs,cpp); if(mode==='add'){ const it = {id:uid(), category:cat, barcode:barcode, name:name, packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked:false, notes:''}; products.push(it); } else { const p = products.find(x=>x.id===selectedId); if(!p) return; p.category=cat; p.barcode=barcode; p.name=name; p.packs=packs; p.pcsPerPack=pcs; p.costPerPack=cpp; p.cost=costVal; p.sellPrice=sell; p.suggestedSellPrice=computeSuggested(costVal); p.markup=computeMarkup(sell,costVal); } save(); closeModal(modalItem); refreshTable(); renderCategoriesTable(); }
-
-  // Edit Cost modal
-  function openEditCostModal(){ const p = products.find(x=>x.id===selectedId); if(!p) return; editPacks.value = p.packs||0; editPcsPerPack.value = p.pcsPerPack||1; editCostPerPack.value = p.costPerPack||1; editCost.value = computeCost(editPacks.value,editPcsPerPack.value,editCostPerPack.value).toFixed(4); showModal(modalEditCost); }
-  function saveEditedCost(){ const p = products.find(x=>x.id===selectedId); if(!p) return; const packs = Number(editPacks.value)||0; const pcs = Number(editPcsPerPack.value)||0; const cpp = Number(editCostPerPack.value)||0; const costVal = computeCost(packs,pcs,cpp); p.packs=packs; p.pcsPerPack=pcs; p.costPerPack=cpp; p.cost=costVal; p.suggestedSellPrice=computeSuggested(costVal); p.markup=computeMarkup(p.sellPrice||0,costVal); save(); closeModal(modalEditCost); refreshTable(); }
-
-  // Local CSV import/export
-  function parseCSV(text){ const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0); if(lines.length===0) return []; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase()); const rows = lines.slice(1).map(line=>{ const cols = line.split(','); const obj = {}; headers.forEach((h,i)=>obj[h]= (cols[i]||'').trim()); return obj; }); return rows; }
-
-  function handleFileImportLocal(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(){ try{ const rows = parseCSV(r.result); rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); }); save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Import completed: '+rows.length+' rows appended.'); }catch(err){ alert('Import error: '+err.message); } } ; r.readAsText(f); }
-
-  function exportCSVLocal(){ const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','notes']; const lines=[hdr.join(',')]; products.forEach(p=>{ const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.notes]; lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(',')); }); const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='mattmat_products_v3.csv'; a.click(); URL.revokeObjectURL(url); }
-
-  // Categories import/export
-  function exportCategoriesCSV(){ const hdr=['category']; const lines=[hdr.join(',')]; categories.forEach(c=>lines.push([c].join(','))); const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mattmat_categories_v3.csv'; a.click(); URL.revokeObjectURL(url); }
-  function handleCategoriesImport(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(){ try{ const rows = parseCSV(r.result); rows.forEach(rw=>{ const name = rw.category || rw.name || ''; if(name && !categories.includes(name)) categories.push(name); }); saveCats(); renderCategoryOptions(); renderCategoriesTable(); alert('Imported categories: '+rows.length); }catch(err){ alert('Categories import error: '+err.message); } }; r.readAsText(f); }
-
-  // Purchase List: single unified table sorted by Category -> Item Name
-  function renderPurchaseTable(){ purchaseContainer.innerHTML = ''; const checked = products.filter(p=>p.checked); if(checked.length===0){ purchaseContainer.innerHTML='<div class="note">No items selected for purchase.</div>'; return; }
-    checked.sort((a,b)=>{ const A=(a.category||'').toLowerCase()+ '|' + (a.name||'').toLowerCase(); const B=(b.category||'').toLowerCase()+ '|' + (b.name||'').toLowerCase(); if(A<B) return -1; if(A>B) return 1; return 0; });
-    const table = document.createElement('table'); table.id='purchaseTable'; const thead = document.createElement('thead'); thead.innerHTML = '<tr><th></th><th>Category</th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>';
-    const tbody = document.createElement('tbody');
-    checked.forEach(it=>{
-      const tr = document.createElement('tr'); tr.dataset.barcode = it.barcode || it.id;
-      const tdBlank = document.createElement('td'); tdBlank.style.width='36px';
-      const tdCat = document.createElement('td'); tdCat.textContent = it.category || '';
-      const tdName = document.createElement('td'); tdName.textContent = it.name || '';
-      const tdCost = document.createElement('td'); tdCost.textContent = formatNumber(it.costPerPack || it.cost);
-      const tdNotes = document.createElement('td'); tdNotes.className='notes-td';
-      const ta = document.createElement('textarea'); ta.className='note-input'; ta.dataset.barcode = it.barcode || it.id; ta.value = it.notes || ''; ta.addEventListener('input', ()=>{ const p = products.find(x=> (x.barcode||x.id) == ta.dataset.barcode); if(p){ p.notes = ta.value; save(); } });
-      const span = document.createElement('div'); span.className='note-print'; span.textContent = it.notes || '';
-      tdNotes.appendChild(ta); tdNotes.appendChild(span);
-      tr.appendChild(tdBlank); tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdCost); tr.appendChild(tdNotes);
+    rows.forEach(p=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(p.barcode || '')}</td>
+        <td>${escapeHtml(p.name || '')}</td>
+        <td><span class="category-pill">${escapeHtml(p.category || '')}</span></td>
+        <td>${Number(p.stocks || 0)}</td>
+        <td>₱ ${formatNumber(p.sell)}</td>
+        <td class="row-actions">
+          <input type="checkbox" data-id="${p.id}" class="select-for-purchase" title="Select for purchase" />
+          <button class="small" data-action="edit" data-id="${p.id}">Edit</button>
+          <button class="small" data-action="editcost" data-id="${p.id}">Edit Cost</button>
+          <button class="small" data-action="delete" data-id="${p.id}">Delete</button>
+        </td>
+      `;
       tbody.appendChild(tr);
-    }); table.appendChild(thead); table.appendChild(tbody); purchaseContainer.appendChild(table);
+    });
+
+    // bind action handlers
+    tbody.querySelectorAll('button[data-action]').forEach(btn=>{
+      btn.onclick = (e)=>{
+        const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        if(action==='edit') openEditModal(id);
+        if(action==='editcost') openEditCostModal(id);
+        if(action==='delete') {
+          if(confirm('Delete this item?')) {
+            products = products.filter(x=>x.id!==id);
+            saveProducts();
+            renderProducts();
+          }
+        }
+      };
+    });
   }
 
-  function savePurchaseList(){ const name = prompt('Enter a name for this purchase list:'); if(!name) return; const selected = products.filter(p=>p.checked).map(p=>({barcode:p.barcode||p.id, notes:p.notes||''})); if(selected.length===0){ alert('No items selected to save.'); return; } const lists = loadSavedLists(); lists.push({name:name, items:selected, created: Date.now()}); saveSavedLists(lists); populateSavedLists(); alert('Purchase list saved.'); }
-  function populateSavedLists(){ const lists = loadSavedLists(); savedListsSelect.innerHTML = ''; lists.forEach((l,i)=>{ const opt = document.createElement('option'); opt.value=i; opt.textContent = l.name + ' ('+ new Date(l.created).toLocaleString()+')'; savedListsSelect.appendChild(opt); }); if(lists.length===0){ const opt = document.createElement('option'); opt.value=''; opt.textContent='-- no saved lists --'; savedListsSelect.appendChild(opt); } }
-  function loadSelectedPurchaseList(){ const idx = savedListsSelect.value; if(idx===''){ alert('No saved list selected.'); return; } const lists = loadSavedLists(); const sel = lists[Number(idx)]; if(!sel) return; products.forEach(p=> p.checked = false); sel.items.forEach(it=>{ const p = products.find(x=> (x.barcode||x.id) == it.barcode); if(p){ p.checked = true; p.notes = it.notes || p.notes; } }); save(); refreshTable(); showView('purchase'); renderPurchaseTable(); alert('Loaded saved purchase list: '+sel.name); }
+  function renderPurchaseList(){
+    const container = ui.purchaseListContainer;
+    container.innerHTML = '';
+    const saved = purchases['__current'] ? purchases['__current'] : [];
+    if(!Array.isArray(saved)) return;
+    saved.forEach((it, idx)=>{
+      const div = document.createElement('div');
+      div.className = 'purchase-item';
+      div.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="checkbox" data-idx="${idx}" ${it.checked ? 'checked':''} class="purchase-check" />
+          <div>
+            <div style="font-weight:600">${escapeHtml(it.name)}</div>
+            <div class="note">barcode: ${escapeHtml(it.barcode || '')}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input data-idx="${idx}" class="purchase-qty" type="number" min="1" value="${it.qty||1}" style="width:70px;padding:6px;border:1px solid var(--border);border-radius:6px;" />
+          <button class="small" data-action="remove" data-idx="${idx}">Remove</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
 
-  // View switching
-  function showView(which){ if(which==='purchase'){ productView.classList.remove('active'); categoriesView.classList.remove('active'); purchaseView.classList.add('active'); renderPurchaseTable(); } else if(which==='categories'){ productView.classList.remove('active'); purchaseView.classList.remove('active'); categoriesView.classList.add('active'); renderCategoriesTable(); } else { purchaseView.classList.remove('active'); categoriesView.classList.remove('active'); productView.classList.add('active'); } }
-
-  // Google Drive integration: helpers
-  async function importFromDrive(){
-    if(typeof gapi === 'undefined' || !gapiInited){ return alert('Google API not ready. Make sure you opened this from https:// or http://localhost and that your keys are set.'); }
-    if(!tokenClient) return alert('Google Identity not initialized.');
-    try{
-      if(!accessToken){ await requestAccessToken(); }
-      // list CSV files
-      const res = await gapi.client.drive.files.list({ q: `mimeType='text/csv' or name contains '.csv'`, pageSize: 50, fields: 'files(id,name,createdTime)'});
-      const files = res.result.files || [];
-      if(files.length===0) return alert('No CSV files found in your Drive.');
-      const nameList = files.map((f,i)=>`${i+1}. ${f.name}`).join('\n');
-      const choice = prompt('Choose file number to import from Drive:\n' + nameList); if(!choice) return;
-      const idx = Number(choice)-1; if(isNaN(idx) || idx<0 || idx>=files.length) return alert('Invalid selection');
-      const fileId = files[idx].id;
-      const res2 = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-      const csv = res2.body || res2.result;
-      const rows = parseCSV(csv);
-      rows.forEach(rw=>{ const packs = Number(rw.packs)||0; const pcs = Number(rw.pcsperpack)||0; const cpp = Number(rw.costperpack)||0; const costVal = computeCost(packs,pcs,cpp); const sell = Number(rw.sellprice)||0; const cat = rw.category || ''; if(cat && !categories.includes(cat)) addCategory(cat); const item = {id:uid(), category:cat, barcode:rw.barcode||'', name:rw.name||'', packs:packs, pcsPerPack:pcs, costPerPack:cpp, cost:costVal, sellPrice:sell, suggestedSellPrice:computeSuggested(costVal), markup:computeMarkup(sell,costVal), checked: (String(rw.checked||'').toLowerCase()==='true'), notes: rw.notes||''}; products.push(item); });
-      save(); refreshTable(); populateSavedLists(); renderCategoriesTable(); alert('Imported '+rows.length+' rows from Drive');
-    }catch(err){ console.error(err); alert('Drive import error: '+ (err.message||err.statusText || err)); }
+    container.querySelectorAll('.purchase-check').forEach(ch=>{
+      ch.onchange = (e)=>{
+        const idx = +ch.dataset.idx;
+        purchases['__current'][idx].checked = ch.checked;
+        savePurchases();
+      };
+    });
+    container.querySelectorAll('.purchase-qty').forEach(input=>{
+      input.onchange = ()=>{
+        const idx = +input.dataset.idx;
+        purchases['__current'][idx].qty = Number(input.value) || 1;
+        savePurchases();
+      };
+    });
+    container.querySelectorAll('button[data-action="remove"]').forEach(b=>{
+      b.onclick = ()=>{
+        const idx = +b.dataset.idx;
+        purchases['__current'].splice(idx,1);
+        savePurchases();
+        renderPurchaseList();
+      };
+    });
   }
 
-  async function exportToDrive(){
-    if(typeof gapi === 'undefined' || !gapiInited){ return alert('Google API not ready.'); }
-    if(!tokenClient) return alert('Google Identity not initialized.');
-    try{
-      if(!accessToken) await requestAccessToken();
-      const csv = buildCSVString();
-      // check existing
-      const list = await gapi.client.drive.files.list({ q: `name='${APP_DRIVE_FILENAME.replace("'","\\'")}'`, fields: 'files(id,name)'});
-      const files = list.result.files || [];
-      if(files.length>0){ const fileId = files[0].id; const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, { method:'PATCH', headers:{ Authorization: 'Bearer ' + accessToken, 'Content-Type':'text/csv' }, body: csv }); if(res.ok) alert('Backup updated on Google Drive'); else alert('Drive update failed: '+res.statusText); }
-      else{ const metadata = { name: APP_DRIVE_FILENAME, mimeType: 'text/csv' }; const form = new FormData(); form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'})); form.append('file', new Blob([csv], {type:'text/csv'})); const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method:'POST', headers:{ Authorization: 'Bearer ' + accessToken }, body: form }); if(res.ok) alert('Backup saved to Google Drive'); else alert('Drive upload failed: '+res.statusText); }
-    }catch(err){ console.error(err); alert('Drive export error: '+ (err.message||err.statusText || err)); }
+  /* ---------- Modals ---------- */
+  function openAddModal(){
+    openEditModal();
   }
 
-  function buildCSVString(){ const hdr = ['category','barcode','name','packs','pcsperpack','costperpack','cost','sellprice','suggestedsellprice','markup','checked','notes']; const lines=[hdr.join(',')]; products.forEach(p=>{ const cols=[p.category,p.barcode,p.name,p.packs,p.pcsPerPack,p.costPerPack,p.cost,p.sellPrice,p.suggestedSellPrice,p.markup,p.checked,p.notes]; lines.push(cols.map(c=>String(c).replace(/,/g,'')).join(',')); }); return lines.join('\n'); }
+  function openEditModal(id){
+    const editing = products.find(p=>p.id===id) || { id: uid(6), barcode:'', name:'', category: categories[0] ? categories[0].name : '', cost_pack:0, cost_pc:0, sell:0, stocks:0, notes:'' };
+    const modal = createModal('Add / Edit Item', `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Barcode</label>
+          <input id="m_barcode" type="text" value="${escapeHtml(editing.barcode||'')}" />
+        </div>
+        <div class="form-row">
+          <label>Product Name</label>
+          <input id="m_name" type="text" value="${escapeHtml(editing.name||'')}" />
+        </div>
+        <div class="form-row">
+          <label>Category</label>
+          <select id="m_category"></select>
+        </div>
+        <div class="form-row">
+          <label>Stocks</label>
+          <input id="m_stocks" type="number" min="0" value="${Number(editing.stocks||0)}" />
+        </div>
+        <div class="form-row">
+          <label>Cost / Pack</label>
+          <input id="m_cost_pack" type="number" min="0" step="0.01" value="${Number(editing.cost_pack||0)}" />
+        </div>
+        <div class="form-row">
+          <label>Cost / Pc</label>
+          <input id="m_cost_pc" type="number" min="0" step="0.01" value="${Number(editing.cost_pc||0)}" />
+        </div>
+        <div class="form-row">
+          <label>Sell / Pc</label>
+          <input id="m_sell" type="number" min="0" step="0.01" value="${Number(editing.sell||0)}" />
+        </div>
+        <div class="form-row" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="m_notes" rows="2">${escapeHtml(editing.notes||'')}</textarea>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+        <button id="m_cancel" class="btn">Cancel</button>
+        <button id="m_save" class="btn primary">Save</button>
+      </div>
+    `);
 
-  function requestAccessToken(){ return new Promise((resolve,reject)=>{ if(!tokenClient) return reject(new Error('Token client not initialized')); tokenClient.requestAccessToken({ prompt: 'consent' , callback: (resp)=>{ if(resp.error) return reject(resp); accessToken = resp.access_token; if(gapiInited) gapi.client.setToken({access_token: accessToken}); resolve(resp); } }); }); }
+    // populate category select
+    const sel = modal.querySelector('#m_category');
+    categories.forEach(c=>{
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      if(c.name === editing.category) opt.selected = true;
+      sel.appendChild(opt);
+    });
 
-  // Init helper that waits for google scripts to be present
-  function loadIdentityScriptAndStart(){
-    if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){
-      // both exist, start app
-      init();
-      return;
+    // smart enter navigation: move to next input
+    modal.querySelectorAll('input, textarea, select').forEach((el, idx, arr)=>{
+      el.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          const next = arr[idx+1];
+          if(next) next.focus();
+          else modal.querySelector('#m_save').focus();
+        }
+      });
+    });
+
+    modal.querySelector('#m_cancel').onclick = ()=> closeModal(modal);
+    modal.querySelector('#m_save').onclick = ()=>{
+      const updated = {
+        id: editing.id,
+        barcode: modal.querySelector('#m_barcode').value.trim(),
+        name: modal.querySelector('#m_name').value.trim(),
+        category: modal.querySelector('#m_category').value,
+        stocks: Number(modal.querySelector('#m_stocks').value) || 0,
+        cost_pack: Number(modal.querySelector('#m_cost_pack').value) || 0,
+        cost_pc: Number(modal.querySelector('#m_cost_pc').value) || 0,
+        sell: Number(modal.querySelector('#m_sell').value) || 0,
+        notes: modal.querySelector('#m_notes').value.trim()
+      };
+      const idx = products.findIndex(p=>p.id===updated.id);
+      if(idx>=0) products[idx] = updated;
+      else products.push(updated);
+      saveProducts();
+      closeModal(modal);
+      renderProducts();
+    };
+  }
+
+  function openEditCostModal(id){
+    const p = products.find(x=>x.id===id);
+    if(!p) return alert('Product not found.');
+    const modal = createModal('Edit Cost', `
+      <div class="form-row">
+        <label>Cost / Pack</label>
+        <input id="mc_cost_pack" type="number" min="0" step="0.01" value="${Number(p.cost_pack||0)}" />
+      </div>
+      <div class="form-row">
+        <label>Cost / Pc</label>
+        <input id="mc_cost_pc" type="number" min="0" step="0.01" value="${Number(p.cost_pc||0)}" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+        <button id="mc_cancel" class="btn">Cancel</button>
+        <button id="mc_save" class="btn primary">Save</button>
+      </div>
+    `);
+
+    modal.querySelector('#mc_cancel').onclick = ()=> closeModal(modal);
+    modal.querySelector('#mc_save').onclick = ()=>{
+      p.cost_pack = Number(modal.querySelector('#mc_cost_pack').value) || 0;
+      p.cost_pc = Number(modal.querySelector('#mc_cost_pc').value) || 0;
+      saveProducts();
+      closeModal(modal);
+      renderProducts();
+    };
+  }
+
+  function createModal(title, innerHtml){
+    const container = document.createElement('div');
+    container.className = 'modal-backdrop';
+    container.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>${escapeHtml(title)}</h3>
+        <div>${innerHtml}</div>
+      </div>
+    `;
+    ui.modals.appendChild(container);
+    // close on backdrop click
+    container.addEventListener('click', (e)=>{
+      if(e.target === container){
+        closeModal(container);
+      }
+    });
+    return container;
+  }
+  function closeModal(node){
+    if(node && node.parentNode) node.parentNode.removeChild(node);
+    // remove all children if many
+    // keep minimal for safety
+  }
+
+  /* ---------- Import & Export CSV ---------- */
+  function exportCSV(){
+    const header = ['barcode','name','category','cost_per_pack','cost_per_pc','sell_per_pc','stocks','notes'];
+    const lines = [header.join(',')];
+    products.forEach(p=>{
+      const row = [
+        quoteCsv(p.barcode || ''),
+        quoteCsv(p.name || ''),
+        quoteCsv(p.category || ''),
+        Number(p.cost_pack || 0).toFixed(2),
+        Number(p.cost_pc || 0).toFixed(2),
+        Number(p.sell || 0).toFixed(2),
+        Number(p.stocks || 0),
+        quoteCsv(p.notes || '')
+      ];
+      lines.push(row.join(','));
+    });
+    const csv = lines.join('\n');
+    downloadBlob(csv, 'mattmat_products.csv', 'text/csv');
+  }
+
+  function importCSVFile(file){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const text = reader.result;
+      const rows = parseCSV(text);
+      const header = rows.shift();
+      // map header indexes:
+      const idx = {};
+      header.forEach((h,i)=> idx[h.trim().toLowerCase()] = i);
+      rows.forEach(r=>{
+        const p = {
+          id: uid(6),
+          barcode: r[idx['barcode']] || '',
+          name: r[idx['name']] || '',
+          category: r[idx['category']] || (categories[0]?categories[0].name:''),
+          cost_pack: parseFloat(r[idx['cost_per_pack']]||0) || 0,
+          cost_pc: parseFloat(r[idx['cost_per_pc']]||0) || 0,
+          sell: parseFloat(r[idx['sell_per_pc']]||0) || 0,
+          stocks: parseInt(r[idx['stocks']]||0) || 0,
+          notes: r[idx['notes']] || ''
+        };
+        products.push(p);
+      });
+      saveProducts();
+      renderProducts();
+      alert('Import complete. Imported ' + rows.length + ' rows.');
+    };
+    reader.readAsText(file);
+  }
+
+  /* ---------- Drive placeholders (non-breaking) ---------- */
+  function driveExport(){
+    // Placeholder: logic for Drive export (uses GOOGLE_API_KEY & GOOGLE_CLIENT_ID)
+    // Keep code non-executing unless user connects OAuth
+    alert('Drive export placeholder. Replace GOOGLE_API_KEY and CLIENT_ID and implement OAuth flow to enable Drive export.');
+  }
+  function driveImport(){
+    alert('Drive import placeholder. Replace GOOGLE_API_KEY and CLIENT_ID and implement OAuth flow to enable Drive import.');
+  }
+
+  /* ---------- Purchase list functions ---------- */
+  function addSelectedToPurchase(){
+    const selected = Array.from(document.querySelectorAll('.select-for-purchase:checked')).map(inp=>{
+      const id = inp.dataset.id;
+      return products.find(p=>p.id===id);
+    }).filter(Boolean);
+    if(selected.length === 0) return alert('No items selected.');
+    purchases['__current'] = purchases['__current'] || [];
+    selected.forEach(s=>{
+      purchases['__current'].push({ id:s.id, barcode:s.barcode, name:s.name, qty:1, checked:true });
+    });
+    savePurchases();
+    renderPurchaseList();
+  }
+  function newPurchase(){
+    purchases['__current'] = [];
+    savePurchases();
+    renderPurchaseList();
+  }
+  function savePurchaseAs(){
+    const name = prompt('Save current purchase list as (enter a name):');
+    if(!name) return;
+    purchases[name] = JSON.parse(JSON.stringify(purchases['__current'] || []));
+    savePurchases();
+    alert('Saved purchase list as "'+name+'".');
+  }
+  function loadPurchase(){
+    const keys = Object.keys(purchases).filter(k=> k !== '__current');
+    if(keys.length===0) return alert('No saved purchase lists found.');
+    const selected = prompt('Saved purchase lists:\n' + keys.join('\n') + '\n\nEnter name to load:');
+    if(!selected) return;
+    if(!purchases[selected]) return alert('Not found.');
+    purchases['__current'] = JSON.parse(JSON.stringify(purchases[selected]));
+    savePurchases();
+    renderPurchaseList();
+  }
+  function printPurchase(){
+    // open print window with simplified view
+    const list = purchases['__current'] || [];
+    let html = `<html><head><title>Purchase List</title><style>
+      body{font-family:Arial,Helvetica,sans-serif;padding:18px;color:#111}
+      h2{margin-top:0}
+      .item{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee}
+      .muted{color:#666;font-size:12px}
+      </style></head><body><h2>Purchase List</h2><div>`;
+    list.forEach(it=>{
+      html += `<div class="item"><div><strong>${escapeHtml(it.name)}</strong><div class="muted">barcode: ${escapeHtml(it.barcode||'')}</div></div><div>Qty: ${Number(it.qty||1)}</div></div>`;
+    });
+    html += `</div></body></html>`;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  /* ---------- Categories Management (simple modal) ---------- */
+  function openCategoriesModal(){
+    const modal = createModal('Categories', `
+      <div class="form-row">
+        <label>Existing Categories</label>
+        <div id="catList" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto;"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input id="newCategory" type="text" placeholder="New category name" style="flex:1" />
+        <button id="addCat" class="btn">Add</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+        <button id="cat_cancel" class="btn">Close</button>
+      </div>
+    `);
+    const list = modal.querySelector('#catList');
+    function refresh(){
+      list.innerHTML = '';
+      categories.forEach((c, idx)=>{
+        const d = document.createElement('div');
+        d.style.display = 'flex';
+        d.style.justifyContent = 'space-between';
+        d.style.alignItems = 'center';
+        d.innerHTML = `<div>${escapeHtml(c.name)}</div><div style="display:flex;gap:6px;"><button data-idx="${idx}" class="small">Rename</button><button data-idx="${idx}" class="small danger">Delete</button></div>`;
+        list.appendChild(d);
+      });
+      list.querySelectorAll('button').forEach(b=>{
+        b.onclick = ()=>{
+          const idx = +b.dataset.idx;
+          if(b.textContent === 'Delete'){
+            if(confirm('Delete category "'+categories[idx].name+'"? This will not delete products but will leave them with the old category text.')) {
+              categories.splice(idx,1);
+              saveCategories();
+              refresh();
+              refreshCategoryFilter();
+            }
+            return;
+          }
+          if(b.textContent === 'Rename'){
+            const newName = prompt('Rename category', categories[idx].name);
+            if(newName) {
+              const old = categories[idx].name;
+              categories[idx].name = newName;
+              // update products that matched exactly the old name
+              products.forEach(p=>{ if(p.category === old) p.category = newName; });
+              saveProducts(); saveCategories();
+              refresh(); renderProducts(); refreshCategoryFilter();
+            }
+          }
+        };
+      });
     }
-    // insert the identity script if not present
-    if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){
-      const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ()=>{ console.log('GIS loaded'); if(typeof gapi !== 'undefined') init(); else setTimeout(loadIdentityScriptAndStart,200); };
-      s.onerror = ()=>{ console.warn('Failed to load GIS script'); };
-      document.head.appendChild(s);
-    }
-    // poll until both exist
-    const poll = setInterval(()=>{ if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){ clearInterval(poll); init(); } }, 200);
+    refresh();
+    modal.querySelector('#addCat').onclick = ()=>{
+      const v = modal.querySelector('#newCategory').value.trim();
+      if(!v) return;
+      if(categories.some(c=>c.name===v)) return alert('Category exists.');
+      categories.push({ id: uid(6), name: v });
+      saveCategories();
+      modal.querySelector('#newCategory').value = '';
+      refresh();
+      refreshCategoryFilter();
+    };
+    modal.querySelector('#cat_cancel').onclick = ()=> closeModal(modal);
   }
 
-  // Start after window load
-  window.addEventListener('load', ()=>{
-    // If API keys not set warn and still init (Drive buttons will show message)
-    if(!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID || GOOGLE_API_KEY.includes('REPLACE') || GOOGLE_CLIENT_ID.includes('REPLACE')){
-      console.warn('Google API key / client ID not set. Drive features will be disabled until you add them in the file.');
-      // still start the app without gapi features
-      init();
-      return;
+  /* ---------- Helpers ---------- */
+  function escapeHtml(s){
+    if(s === undefined || s === null) return '';
+    return String(s).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  function quoteCsv(s){
+    if(s === undefined || s === null) return '""';
+    const v = String(s).replace(/"/g,'""');
+    return `"${v}"`;
+  }
+  function parseCSV(text){
+    // simple CSV parser - supports quoted fields with commas
+    const rows = [];
+    const lines = text.split(/\r?\n/);
+    for(const line of lines){
+      if(!line) continue;
+      const row = [];
+      let cur = '', inQuotes=false;
+      for(let i=0;i<line.length;i++){
+        const ch = line[i];
+        if(ch === '"' && line[i+1] === '"'){ cur += '"'; i++; continue; }
+        if(ch === '"'){ inQuotes = !inQuotes; continue; }
+        if(ch === ',' && !inQuotes){ row.push(cur); cur = ''; continue; }
+        cur += ch;
+      }
+      row.push(cur);
+      rows.push(row);
     }
-    // init gapi client library loader already included via <script src="https.../api.js"></script>
-    // Wait for gapi to be ready then load GIS
-    function waitGapiThenStart(){ if(typeof gapi !== 'undefined'){ loadIdentityScriptAndStart(); } else setTimeout(waitGapiThenStart,200); }
-    waitGapiThenStart();
+    return rows;
+  }
+  function downloadBlob(text, filename, mime){
+    const blob = new Blob([text], { type: mime || 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'download.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  }
+  function formatNumber(n){
+    return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  /* ---------- Events ---------- */
+  document.getElementById('btnAdd').onclick = openAddModal;
+  document.getElementById('btnImport').onclick = ()=> ui.fileInput.click();
+  ui.fileInput.onchange = (e)=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    importCSVFile(f);
+    ui.fileInput.value = '';
+  };
+  document.getElementById('btnExport').onclick = exportCSV;
+  document.getElementById('btnDriveExport').onclick = driveExport;
+  document.getElementById('btnDriveImport').onclick = driveImport;
+  document.getElementById('btnCategories').onclick = openCategoriesModal;
+  document.getElementById('btnAddSelected').onclick = addSelectedToPurchase;
+  document.getElementById('btnNewPurchase').onclick = newPurchase;
+  document.getElementById('btnSavePurchase').onclick = savePurchaseAs;
+  document.getElementById('btnLoadPurchase').onclick = loadPurchase;
+  document.getElementById('btnPrintPurchase').onclick = printPurchase;
+
+  ui.search.oninput = renderProducts;
+  ui.filterCategory.onchange = renderProducts;
+  ui.rowsPerPage.onchange = renderProducts;
+
+  // sort by clicking headers
+  document.querySelectorAll('#productTable thead th[data-key]').forEach(th=>{
+    th.onclick = ()=>{
+      const key = th.dataset.key;
+      if(currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+      else { currentSort.key = key; currentSort.dir = 'asc'; }
+      // update sort indicators
+      document.querySelectorAll('#productTable thead th .sort-ind').forEach(si=> si.textContent = '');
+      th.querySelector('.sort-ind').textContent = currentSort.dir === 'asc' ? '▲' : '▼';
+      renderProducts();
+    };
   });
 
-  // Expose some functions for debugging
+  // when clicking product selection checkbox, do nothing special here (used by addSelectedToPurchase)
+  // keyboard shortcuts
+  document.addEventListener('keydown', (e)=>{
+    if(e.ctrlKey && e.key.toLowerCase()==='f'){ e.preventDefault(); ui.search.focus(); }
+    if(e.key === 'F1'){ e.preventDefault(); openAddModal(); }
+  });
+
+  /* ---------- Init ---------- */
+  loadCategories();
+  loadProducts();
+  loadPurchases();
+  refreshCategoryFilter();
+  renderProducts();
+  renderPurchaseList();
+
+  // expose some functions for console debugging (safe)
   window._mattmat = { products, categories };
+
+  /* ---------- End IIFE ---------- */
 })();
 </script>
+
 </body>
 </html>
