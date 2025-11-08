@@ -565,14 +565,48 @@ const APP_DRIVE_FILENAME = 'mattmat_inventory_backup.csv';
     const poll = setInterval(()=>{ if(typeof google !== 'undefined' && typeof gapi !== 'undefined'){ clearInterval(poll); init(); } }, 200);
   }
 
-  // Start after window load
-  window.addEventListener('load', ()=>{
-    // If API keys not set warn and still init (Drive buttons will show message)
-    updateDriveUI();
-    // init gapi client library loader already included via <script src="https://apis.google.com/js/api.js"></script>
-    function waitGapiThenStart(){ if(typeof gapi !== 'undefined'){ loadIdentityScriptAndStart(); } else setTimeout(waitGapiThenStart,200); }
-    waitGapiThenStart();
+// Start after window load
+window.addEventListener('load', ()=>{
+  updateDriveUI();
+
+  // Load both Google scripts safely before init()
+  function loadGoogleScripts() {
+    return new Promise((resolve) => {
+      let readyCount = 0;
+      function checkReady() {
+        if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+          resolve();
+        } else if (readyCount++ < 40) {
+          setTimeout(checkReady, 250);
+        } else {
+          alert('⚠️ Google libraries failed to load. Check your internet connection.');
+        }
+      }
+
+      // load api.js if not already
+      if (!document.querySelector('script[src*="apis.google.com/js/api.js"]')) {
+        const gapiScript = document.createElement('script');
+        gapiScript.src = 'https://apis.google.com/js/api.js';
+        document.head.appendChild(gapiScript);
+      }
+
+      // load identity client if not already
+      if (!document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
+        const gisScript = document.createElement('script');
+        gisScript.src = 'https://accounts.google.com/gsi/client';
+        document.head.appendChild(gisScript);
+      }
+
+      checkReady();
+    });
+  }
+
+  loadGoogleScripts().then(() => {
+    console.log('✅ Google libraries ready');
+    init(); // now safe to call init() — both gapi and google.accounts exist
   });
+});
+
 
   // Expose some functions for debugging
   window._mattmat = { products, categories, exportToDrive, importFromDrive };
