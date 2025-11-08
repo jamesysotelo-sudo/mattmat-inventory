@@ -1254,5 +1254,170 @@ function handleDriveImportAll() {
 
 /* Close the main script properly */
 </script>
+
+<!-- Drive Init Helper (appended by assistant - fixes Connect button enabling only) -->
+<script>
+(function(){
+  // Do not change existing variables or functions. This helper only ensures Google APIs are
+  // initialized and enables the Connect button when ready, without altering UI or layout.
+
+  // Guard: if elements or Google config not present, do nothing.
+  function safeGet(id){ try{ return document.getElementById(id); }catch(e){return null;} }
+  const btnDriveConnect = safeGet('btnDriveConnect');
+  const btnDriveUpload = safeGet('btnDriveUpload');
+  const btnDriveLoad = safeGet('btnDriveLoad');
+  const driveStatusEl = safeGet('driveStatus');
+
+  // If button missing, abort silently.
+  if(!btnDriveConnect || !driveStatusEl) return;
+
+  // Internal flags (do not overwrite global flags if they exist)
+  try {
+    window._assistant_drive_helper = window._assistant_drive_helper || {};
+    const helper = window._assistant_drive_helper;
+    helper.gapiInited = helper.gapiInited || false;
+    helper.gisInited = helper.gisInited || false;
+  } catch(e) {
+    // ignore
+  }
+
+  function maybeEnableDriveUI(){
+    // prefer using existing globals if present
+    const gapiInited = (typeof window.gapiInited !== 'undefined') ? window.gapiInited : window._assistant_drive_helper.gapiInited;
+    const gisInited = (typeof window.gisInited !== 'undefined') ? window.gisInited : window._assistant_drive_helper.gisInited;
+
+    if(gapiInited && gisInited){
+      btnDriveConnect.disabled = false;
+      if(driveStatusEl && driveStatusEl.textContent && driveStatusEl.textContent.indexOf('Ready') === -1) {
+        driveStatusEl.textContent = 'Drive: Ready (not connected)';
+      }
+    } else {
+      // keep disabled until both ready
+      btnDriveConnect.disabled = true;
+      if(driveStatusEl && driveStatusEl.textContent && driveStatusEl.textContent.indexOf('Initializing') === -1) {
+        driveStatusEl.textContent = 'Drive: Initializing...';
+      }
+    }
+  }
+
+  // Setup handlers when gapi and gis scripts load (works whether they are loaded at top or later)
+  function onGapiLoaded(){
+    if(!window.gapi) return;
+    // initialize client if not already
+    if(typeof window.gapi.client !== 'undefined' && !window._assistant_drive_helper.gapiInited){
+      try{
+        window.gapi.client.init({ apiKey: (window.GOOGLE_API_KEY || window.GOOGLE_API_KEY || ''), discoveryDocs: (window.DISCOVERY_DOCS || window.DISCOVERY_DOCS || []) })
+          .then(function(){
+            window._assistant_drive_helper.gapiInited = true;
+            if(typeof window.gapiInited === 'undefined') window.gapiInited = true;
+            maybeEnableDriveUI();
+          })
+          .catch(function(err){
+            console.warn('assistant helper: gapi.client.init error', err);
+            // still attempt to enable UI later
+            maybeEnableDriveUI();
+          });
+      }catch(e){
+        console.warn('assistant helper gapi init exception', e);
+        maybeEnableDriveUI();
+      }
+    } else {
+      // mark as inited if client already has token or initialized elsewhere
+      if(window.gapi && window.gapi.client) {
+        window._assistant_drive_helper.gapiInited = true;
+        if(typeof window.gapiInited === 'undefined') window.gapiInited = true;
+      }
+      maybeEnableDriveUI();
+    }
+  }
+
+  function onGisLoaded(){
+    if(!window.google || !google.accounts || !google.accounts.oauth2) {
+      // still set flag and try later
+      window._assistant_drive_helper.gisInited = true;
+      if(typeof window.gisInited === 'undefined') window.gisInited = true;
+      maybeEnableDriveUI();
+      return;
+    }
+    // ensure token client exists or create a safe one (without changing app tokenClient if present)
+    try{
+      if(!window.tokenClient){
+        // create a non-intrusive tokenClient that won't override app behavior; callback left minimal
+        window.tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: (window.GOOGLE_CLIENT_ID || window.GOOGLE_CLIENT_ID || ''),
+          scope: (window.SCOPES || window.SCOPES || 'https://www.googleapis.com/auth/drive.file'),
+          callback: function(resp){
+            // set gapi token if available
+            if(resp && resp.access_token && window.gapi && window.gapi.client){
+              try{ window.gapi.client.setToken({access_token: resp.access_token}); }catch(e){}
+              driveStatusEl.textContent = 'Drive: Connected';
+              if(btnDriveUpload) btnDriveUpload.disabled = false;
+              if(btnDriveLoad) btnDriveLoad.disabled = false;
+            }
+          }
+        });
+      }
+      window._assistant_drive_helper.gisInited = true;
+      if(typeof window.gisInited === 'undefined') window.gisInited = true;
+    }catch(e){
+      console.warn('assistant helper: gis init error', e);
+      window._assistant_drive_helper.gisInited = true;
+      if(typeof window.gisInited === 'undefined') window.gisInited = true;
+    }
+    maybeEnableDriveUI();
+  }
+
+  // If scripts already present, attach onload callbacks or call directly
+  (function attachOrLoadScripts(){
+    // If apis script already loaded and gapi exists, call handler; otherwise set onload
+    const existingGapi = window.gapi;
+    if(existingGapi){
+      try{ onGapiLoaded(); }catch(e){}
+    } else {
+      // find script tag
+      const s = document.querySelector('script[src*="apis.google.com/js/api.js"]');
+      if(s){
+        s.addEventListener('load', onGapiLoaded);
+      } else {
+        // create script tag but do not duplicate if already being added elsewhere
+        const n = document.createElement('script');
+        n.src = 'https://apis.google.com/js/api.js';
+        n.onload = onGapiLoaded;
+        n.onerror = function(){ console.warn('assistant helper: failed to load api.js'); maybeEnableDriveUI(); };
+        document.head.appendChild(n);
+      }
+    }
+
+    const existingGis = window.google && window.google.accounts;
+    if(existingGis){
+      try{ onGisLoaded(); }catch(e){}
+    } else {
+      const s2 = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+      if(s2){
+        s2.addEventListener('load', onGisLoaded);
+      } else {
+        const n2 = document.createElement('script');
+        n2.src = 'https://accounts.google.com/gsi/client';
+        n2.onload = onGisLoaded;
+        n2.onerror = function(){ console.warn('assistant helper: failed to load gis client'); maybeEnableDriveUI(); };
+        document.head.appendChild(n2);
+      }
+    }
+  })();
+
+  // Also attempt to enable UI periodically for a short time in case loading already happened earlier
+  let tries = 0;
+  const intId = setInterval(function(){
+    maybeEnableDriveUI();
+    tries++;
+    if(tries > 10 || (window._assistant_drive_helper.gapiInited && window._assistant_drive_helper.gisInited)) {
+      clearInterval(intId);
+    }
+  }, 700);
+
+})();
+</script>
+<!-- End Drive Init Helper -->
+
 </body>
 </html>
