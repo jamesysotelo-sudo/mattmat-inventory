@@ -95,7 +95,7 @@ Each purchase list prints in a **clean, receipt-like format**, showing:
 
 ## 🚀 How to Use
 
-1. **Download** the latest HTML file (`mattmat_inventory_v3_2_4.html`).
+1. **Download** the latest HTML file (`index.html`).
 2. **Open it in your browser** (Chrome recommended).
 3. Add products, edit costs, and create purchase lists.
 4. Optionally connect your Google Drive for cloud backup.
