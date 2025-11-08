@@ -332,6 +332,12 @@ const GOOGLE_CLIENT_ID = '96651524997-fu2eois3b9geiqdo2js2600hg1mj84p3.apps.goog
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
+// Expose Drive constants globally for helper scripts
+window.GOOGLE_API_KEY = GOOGLE_API_KEY;
+window.GOOGLE_CLIENT_ID = GOOGLE_CLIENT_ID;
+window.DISCOVERY_DOCS = DISCOVERY_DOCS;
+window.SCOPES = SCOPES;
+  
 /* Elements */
 const productTableBody = document.querySelector('#productTable tbody');
 const searchInput = document.getElementById('search');
