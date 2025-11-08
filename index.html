@@ -1094,31 +1094,57 @@ function renderRemarksTable(){
 /* -------------------------
    Purchase list (save/ load / print / auto save)
    ------------------------- */
+
 function renderPurchaseTable(){
   purchaseContainer.innerHTML = '';
   const checked = products.filter(p=>p.checked);
   if(checked.length === 0){ purchaseContainer.innerHTML = '<div class="note">No items selected for purchase.</div>'; return; }
+
+  // Calculate total cost (sum of costPerPack if available, otherwise cost)
+  let totalCost = 0;
+  checked.forEach(it=>{
+    const cpack = (it.costPerPack !== undefined && it.costPerPack !== null && it.costPerPack !== '') ? Number(it.costPerPack) : null;
+    const cost = cpack !== null ? Number(cpack) : ((it.cost !== undefined && it.cost !== null && it.cost !== '') ? Number(it.cost) : 0);
+    if(!isNaN(cost)) totalCost += cost;
+  });
+
   const top = document.createElement('div');
   top.style.marginBottom = '8px';
+
   if(loadedPurchaseListName){
     const bold = document.createElement('div'); bold.className = 'purchase-title'; bold.textContent = loadedPurchaseListName; top.appendChild(bold);
   }
+
+  // Total cost display (right aligned)
+  const totalDiv = document.createElement('div');
+  totalDiv.style.fontWeight = '700';
+  totalDiv.style.textAlign = 'right';
+  totalDiv.textContent = 'TOTAL COST: ₱' + (isNaN(totalCost) ? '0.00' : Number(totalCost).toFixed(2));
+  top.appendChild(totalDiv);
+
   const table = document.createElement('table'); table.id='purchaseTable';
   const thead = document.createElement('thead');
   thead.innerHTML = '<tr><th></th><th>Category</th><th>Item Name</th><th>Cost Per Pack</th><th>Notes</th></tr>';
   const tbody = document.createElement('tbody');
+
   checked.sort((a,b)=>{ const A=(a.category||'').toLowerCase()+'|'+(a.name||'').toLowerCase(); const B=(b.category||'').toLowerCase()+'|'+(b.name||'').toLowerCase(); if(A<B) return -1; if(A>B) return 1; return 0; });
   checked.forEach(it=>{
     const tr = document.createElement('tr'); tr.dataset.barcode = it.barcode || it.id;
     const tdBlank = document.createElement('td'); tdBlank.style.width='36px';
     const tdCat = document.createElement('td'); tdCat.textContent = it.category || '';
     const tdName = document.createElement('td'); tdName.textContent = it.name || '';
-    const tdCost = document.createElement('td'); tdCost.textContent = (it.costPerPack!==undefined? Number(it.costPerPack).toFixed(2) : (it.cost!==undefined? Number(it.cost).toFixed(2) : ''));
+
+    const displayCost = (it.costPerPack!==undefined && it.costPerPack !== null && it.costPerPack !== '') ? Number(it.costPerPack).toFixed(2)
+                        : ((it.cost!==undefined && it.cost !== null && it.cost !== '') ? Number(it.cost).toFixed(2) : '');
+
+    const tdCost = document.createElement('td'); tdCost.textContent = displayCost;
+    if(displayCost !== '' && Number(displayCost) < 0) tdCost.classList.add('negative');
+
     const tdNotes = document.createElement('td'); tdNotes.className='notes-td';
     const ta = document.createElement('textarea'); ta.className='note-input'; ta.dataset.barcode = it.barcode || it.id; ta.value = it.notes || '';
     ta.addEventListener('input', ()=>{ const p = products.find(x => (x.barcode||x.id) == ta.dataset.barcode); if(p){ p.notes = ta.value; saveAll(); } });
     const span = document.createElement('div'); span.className='note-print';
-    let printed = ''; if(it.remarks) printed += it.remarks; if(it.notes){ if(printed) printed += '\n'+it.notes; else printed = it.notes; }
+    let printed = ''; if(it.remarks) printed += it.remarks; if(it.notes){ if(printed) printed += '\\n'+it.notes; else printed = it.notes; }
     span.textContent = printed;
     tdNotes.appendChild(ta); tdNotes.appendChild(span);
     tr.appendChild(tdBlank); tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdCost); tr.appendChild(tdNotes);
@@ -1128,6 +1154,7 @@ function renderPurchaseTable(){
   purchaseContainer.appendChild(top);
   purchaseContainer.appendChild(table);
 }
+
 
 function savePurchaseList(){
   let name = prompt('Enter a name for this purchase list:');
