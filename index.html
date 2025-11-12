@@ -18,9 +18,9 @@
 
   /* Base layout */
   body{margin:0;padding:14px;background:var(--bg);color:var(--txt);transition:background .22s,color .22s}
-  header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:clamp(4px,1vw,8px);margin-bottom:12px;flex-wrap:nowrap;}
   h1{font-size:18px;margin:0}
-  .controls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .controls{display:flex;flex-wrap:nowrap;gap:clamp(4px,1vw,8px);width:100%;max-width:100%;justify-content:flex-end;}
   button{background:var(--panel);border:1px solid #222;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
   button:disabled{opacity:.5;cursor:not-allowed}
   .view{display:none}
@@ -182,11 +182,7 @@
     flex-wrap: wrap;
     gap: 6px;
   }
-  .controls button {
-    flex: 1 1 48%;
-    font-size: 13px;
-    padding: 10px;
-  }
+  .controls button{flex:1 1 0;min-width:0;background:var(--panel);border:1px solid #222;padding:clamp(4px,0.7vw,8px) clamp(6px,1vw,10px);border-radius:8px;cursor:pointer;font-size:clamp(11px,1.6vw,14px);white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
   h1 {
     font-size: 16px;
     line-height: 1.2;
@@ -249,12 +245,12 @@
     <div class="note">Single-file offline inventory. Data saved to localStorage. Optional Google Drive sync available.</div>
   </div>
   <div class="controls">
-    <button id="btnAdd">➕ Add Item</button>
-    <button id="btnEditItem" disabled>✏️ Edit Item</button>
-    <button id="btnEditCost" disabled>💰 Edit Cost</button>
-    <button id="btnDelete" disabled>🗑️ Delete Item</button>
-    <button id="btnGoPurchase">🛒 Purchase List</button>
-    <button id="btnDataTools">🧰 Data Tools</button>
+    <button id="btnAdd">➕</button>
+    <button id="btnEditItem" disabled>✏️</button>
+    <button id="btnEditCost" disabled>💰</button>
+    <button id="btnDelete" disabled>🗑️</button>
+    <button id="btnGoPurchase">🛒</button>
+    <button id="btnDataTools">🧰</button>
     <button id="btnToggleDark">🌙</button>
   </div>
 </header>
