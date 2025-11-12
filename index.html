@@ -154,6 +154,21 @@
   /* small spacing tweak for modal grid labels */
   label{display:block;margin-bottom:6px;font-size:13px}
 
+
+/* === Touch-friendly search + single-line shrinking filters === */
+.topbar { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+.searchbox { width:100%; }
+.searchbox input { width:100%; font-size:16px; padding:10px 14px; height:48px; border-radius:10px; border:1px solid var(--input-border); box-sizing:border-box; }
+.filters-row { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
+.filters-row select, .filters-row button { flex:1 1 0; min-width:72px; height:46px; font-size:16px; border-radius:8px; padding:8px 10px; border:1px solid var(--input-border); background:var(--panel); white-space:nowrap; }
+#rowsPerPageLabel { display:none !important; }
+@media (max-width:768px) {
+  /* Keep filters on one line and allow them to shrink */
+  .filters-row select, .filters-row button { min-width:60px; font-size:15px; height:44px; }
+  .searchbox input { height:50px; }
+}
+/* === end search/filter rules === */
+
 /* ===== Mobile Enhancements ===== */
 @media (max-width: 768px) {
   header {
@@ -245,19 +260,24 @@
 </header>
 
 <section id="productView" class="view active">
+  
   <div class="topbar">
-    <div class="search" style="flex:1;gap:8px;align-items:center">
+    <div class="searchbox">
       <input id="search" type="text" placeholder="Search by Item Name or Barcode..." />
-      <select id="filterCategory" style="width:180px">
+    </div>
+    <div class="filters-row">
+      <select id="filterCategory" style="min-width:72px">
         <option value="">— All Categories —</option>
       </select>
-      <select id="filterRemarks" style="width:180px">
+      <select id="filterRemarks" style="min-width:72px">
         <option value="">— All Remarks —</option>
       </select>
-      <button id="btnResetFilters">Reset</button>
-      <button id="btnUncheck">🧹 Uncheck All</button>
+      <button id="btnResetFilters" style="min-width:72px">Reset</button>
+      <button id="btnUncheck" style="min-width:72px">🧹 Uncheck All</button>
     </div>
-    <label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
+    <label id="rowsPerPageLabel" style="display:none">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
+  </div>
+<label style="width:110px">Rows: <input id="rowsPerPage" type="number" value="9999" min="1" style="width:60px"></label>
   </div>
 
   <div class="table-wrap" id="tableWrap">
