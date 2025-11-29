@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mattmat Simple POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f6f6f6;
+      --panel:#ffffff;
+      --accent:#2e7d32;
+      --danger:#d32f2f;
+      --border:#333;
+      --muted:#777;
+      font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      padding:10px;
+      background:var(--bg);
+      color:#111;
+      font-size:18px;
+    }
+    .app{
+      max-width:900px;
+      margin:0 auto;
+      background:var(--panel);
+      border-radius:12px;
+      padding:12px;
+      box-shadow:0 2px 8px rgba(0,0,0,.12);
+    }
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-size:22px;
+    }
+    .subtitle{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .pill{
+      padding:4px 10px;
+      border-radius:999px;
+      background:#e0f2f1;
+      font-size:13px;
+      white-space:nowrap;
+    }
+
+    input[type=text],
+    input[type=number]{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #bbb;
+      font-size:18px;
+    }
+
+    button{
+      cursor:pointer;
+      border-radius:10px;
+      border:1px solid var(--border);
+      padding:10px 14px;
+      font-size:18px;
+      background:#fafafa;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      touch-action:manipulation;
+    }
+    button:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+    }
+    .btn-main{
+      background:var(--accent);
+      color:#fff;
+      border-color:var(--accent);
+      font-weight:600;
+    }
+    .btn-danger{
+      background:#ffebee;
+      color:var(--danger);
+      border-color:var(--danger);
+    }
+    .btn-ghost{
+      background:#f5f5f5;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .row > *{
+      flex:1 1 0;
+      min-width:0;
+    }
+
+    .search-help{
+      font-size:13px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .panel{
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding:8px;
+      background:#fff;
+    }
+
+    .results-list{
+      max-height:220px;
+      overflow:auto;
+      margin-top:6px;
+      border-radius:8px;
+      border:1px solid #eee;
+    }
+    .result-item{
+      padding:8px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      border-bottom:1px solid #f1f1f1;
+      font-size:16px;
+    }
+    .result-item:last-child{
+      border-bottom:none;
+    }
+    .result-main{
+      flex:1 1 auto;
+      min-width:0;
+    }
+    .result-name{
+      font-weight:600;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .result-meta{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .result-price{
+      font-weight:600;
+      font-size:16px;
+      white-space:nowrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:16px;
+    }
+    th,td{
+      border-bottom:1px solid #eee;
+      padding:8px 6px;
+      text-align:left;
+    }
+    th{
+      font-size:14px;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      color:var(--muted);
+    }
+    td.qty,td.price,td.subtotal{
+      text-align:center;
+      white-space:nowrap;
+    }
+    tr.cart-row{
+      cursor:pointer;
+    }
+    tr.cart-row:hover{
+      background:#fff8e1;
+    }
+    .empty{
+      text-align:center;
+      padding:16px 6px;
+      font-size:15px;
+      color:var(--muted);
+    }
+
+    .totals{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:8px;
+      align-items:flex-start;
+    }
+    .totals-left{
+      flex:1 1 180px;
+    }
+    .totals-right{
+      flex:1 1 180px;
+    }
+    .totals-row{
+      display:flex;
+      justify-content:space-between;
+      font-size:17px;
+      margin-bottom:4px;
+    }
+    .totals-row strong{
+      font-size:18px;
+    }
+
+    .label-sm{
+      font-size:14px;
+      margin-bottom:2px;
+      color:var(--muted);
+    }
+
+    .money-input{
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .money-input span{
+      font-size:20px;
+    }
+
+    .change{
+      font-size:22px;
+      font-weight:700;
+    }
+
+    .footer-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .footer-actions > *{
+      flex:1 1 0;
+      min-width:0;
+    }
+
+    .status{
+      font-size:14px;
+      color:var(--muted);
+      margin-top:4px;
+      min-height:18px;
+    }
+    .status.ok{
+      color:var(--accent);
+    }
+    .status.error{
+      color:var(--danger);
+    }
+
+    /* Simple modal for editing row */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
+    .modal{
+      background:#fff;
+      border-radius:12px;
+      padding:14px;
+      width:95%;
+      max-width:420px;
+      box-shadow:0 8px 24px rgba(0,0,0,.3);
+    }
+    .modal h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    .modal-name{
+      font-size:15px;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+    .modal-row{
+      margin-bottom:8px;
+    }
+    .modal-row label{
+      display:block;
+      font-size:14px;
+      margin-bottom:3px;
+      color:var(--muted);
+    }
+    .modal-actions{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .modal-actions button{
+      flex:1 1 0;
+      min-width:0;
+    }
+
+    @media (max-width:600px){
+      body{font-size:17px;}
+      h1{font-size:20px;}
+      button{font-size:17px;}
+      th,td{font-size:15px;}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Mattmat Simple POS</h1>
+      <div class="subtitle">
+        Uses <strong>sell price</strong> from your inventory (localStorage key: <code>store_inventory_v3_2_7</code>)
+      </div>
+    </div>
+    <div class="pill">For iPad + Barcode Scanner</div>
+  </header>
+
+  <!-- SEARCH / SCAN -->
+  <section class="panel">
+    <div class="row">
+      <div>
+        <input id="searchInput" type="text" placeholder="Scan barcode or type item name, then press Enter…" autocomplete="off" />
+        <div class="search-help">
+          • Scan barcode → item auto-add if found<br>
+          • Or type part of the name → tap “Add”
+        </div>
+      </div>
+    </div>
+    <div id="results" class="results-list"></div>
+  </section>
+
+  <!-- CART -->
+  <section class="panel" style="margin-top:10px;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50%;">Item</th>
+          <th class="qty" style="width:15%;">Qty</th>
+          <th class="price" style="width:15%;">Price</th>
+          <th class="subtotal" style="width:20%;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody id="cartBody">
+        <tr><td colspan="4" class="empty">No items yet. Scan or search to add.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="totals-left">
+        <div class="totals-row">
+          <span>Total Qty</span>
+          <strong id="totalQty">0</strong>
+        </div>
+        <div class="totals-row">
+          <span>Total Amount</span>
+          <strong id="totalAmount">₱0.00</strong>
+        </div>
+      </div>
+      <div class="totals-right">
+        <div class="modal-row">
+          <div class="label-sm">Cash Received</div>
+          <div class="money-input">
+            <span>₱</span>
+            <input id="cashInput" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="label-sm">Change</div>
+          <div id="changeDisplay" class="change">₱0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button id="btnClear" class="btn-ghost">🧹 Clear Cart</button>
+      <button id="btnCopyReceipt" class="btn-main">📋 Copy Receipt</button>
+    </div>
+    <div id="status" class="status"></div>
+  </section>
+</div>
+
+<!-- MODAL: EDIT CART ITEM -->
+<div id="editModalBackdrop" class="modal-backdrop">
+  <div class="modal">
+    <h2>Edit Item</h2>
+    <div id="editItemName" class="modal-name"></div>
+
+    <div class="modal-row">
+      <label for="editQty">Quantity</label>
+      <input id="editQty" type="number" min="1" step="1" />
+    </div>
+    <div class="modal-row">
+      <label for="editPrice">Price (each)</label>
+      <input id="editPrice" type="number" min="0" step="0.01" />
+    </div>
+
+    <div class="modal-actions">
+      <button id="btnDeleteItem" class="btn-danger">🗑️ Delete</button>
+      <button id="btnCancelEdit" class="btn-ghost">Cancel</button>
+      <button id="btnSaveEdit" class="btn-main">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'store_inventory_v3_2_7'; // from Mattmat Store Inventory
+  let products = [];
+  let cart = [];
+  let editingIndex = null;
+
+  const searchInput = document.getElementById('searchInput');
+  const resultsDiv = document.getElementById('results');
+  const cartBody = document.getElementById('cartBody');
+  const totalQtyEl = document.getElementById('totalQty');
+  const totalAmountEl = document.getElementById('totalAmount');
+  const cashInput = document.getElementById('cashInput');
+  const changeDisplay = document.getElementById('changeDisplay');
+  const btnClear = document.getElementById('btnClear');
+  const btnCopyReceipt = document.getElementById('btnCopyReceipt');
+  const statusEl = document.getElementById('status');
+
+  const editModalBackdrop = document.getElementById('editModalBackdrop');
+  const editItemNameEl = document.getElementById('editItemName');
+  const editQtyInput = document.getElementById('editQty');
+  const editPriceInput = document.getElementById('editPrice');
+  const btnSaveEdit = document.getElementById('btnSaveEdit');
+  const btnCancelEdit = document.getElementById('btnCancelEdit');
+  const btnDeleteItem = document.getElementById('btnDeleteItem');
+
+  function loadProducts() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      // normalize
+      return arr.map(p => ({
+        id: p.id || (p.barcode || p.name || Math.random().toString(36).slice(2)),
+        name: p.name || '',
+        barcode: p.barcode || '',
+        sellPrice: p.sellPrice
+      }));
+    } catch (e) {
+      console.error('Error loading products', e);
+      return [];
+    }
+  }
+
+  function getSellPrice(p) {
+    let v = typeof p.sellPrice === 'number' ? p.sellPrice : parseFloat(p.sellPrice);
+    if (!isFinite(v)) v = 0;
+    return v;
+  }
+
+  function formatMoney(v) {
+    const n = Number(v) || 0;
+    return '₱' + n.toFixed(2);
+  }
+
+  function renderResults(query) {
+    resultsDiv.innerHTML = '';
+    const q = (query || '').trim().toLowerCase();
+    if (!q) return;
+
+    const matches = products.filter(p =>
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(q))
+    ).slice(0, 50);
+
+    if (matches.length === 0) {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+      div.textContent = 'No matching items.';
+      resultsDiv.appendChild(div);
+      return;
+    }
+
+    matches.forEach(p => {
+      const price = getSellPrice(p);
+      const row = document.createElement('div');
+      row.className = 'result-item';
+
+      const main = document.createElement('div');
+      main.className = 'result-main';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'result-name';
+      nameEl.textContent = p.name || '(No name)';
+      const metaEl = document.createElement('div');
+      metaEl.className = 'result-meta';
+      metaEl.textContent = p.barcode ? ('Barcode: ' + p.barcode) : 'No barcode';
+
+      main.appendChild(nameEl);
+      main.appendChild(metaEl);
+
+      const priceEl = document.createElement('div');
+      priceEl.className = 'result-price';
+      priceEl.textContent = price > 0 ? formatMoney(price) : '₱0.00';
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Add';
+      btn.className = 'btn-main';
+      btn.style.fontSize = '16px';
+      btn.addEventListener('click', () => {
+        addToCartFromProduct(p);
+        searchInput.value = '';
+        resultsDiv.innerHTML = '';
+        searchInput.focus();
+      });
+
+      row.appendChild(main);
+      row.appendChild(priceEl);
+      row.appendChild(btn);
+      resultsDiv.appendChild(row);
+    });
+  }
+
+  function addToCartFromProduct(p) {
+    const price = getSellPrice(p);
+    // same product: match by id and price
+    const idx = cart.findIndex(item => item.productId === p.id && item.price === price);
+    if (idx >= 0) {
+      cart[idx].qty += 1;
+    } else {
+      cart.push({
+        productId: p.id,
+        name: p.name || '(No name)',
+        price: price,
+        qty: 1
+      });
+    }
+    renderCart();
+    showStatus('Added: ' + (p.name || '(No name)'), 'ok');
+  }
+
+  function renderCart() {
+    cartBody.innerHTML = '';
+    if (cart.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4;
+      td.className = 'empty';
+      td.textContent = 'No items yet. Scan or search to add.';
+      tr.appendChild(td);
+      cartBody.appendChild(tr);
+      updateTotals();
+      return;
+    }
+
+    cart.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.className = 'cart-row';
+      tr.dataset.index = index;
+
+      const tdName = document.createElement('td');
+      tdName.textContent = item.name;
+
+      const tdQty = document.createElement('td');
+      tdQty.className = 'qty';
+      tdQty.textContent = item.qty;
+
+      const tdPrice = document.createElement('td');
+      tdPrice.className = 'price';
+      tdPrice.textContent = formatMoney(item.price);
+
+      const tdSub = document.createElement('td');
+      tdSub.className = 'subtotal';
+      tdSub.textContent = formatMoney(item.qty * item.price);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdQty);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdSub);
+
+      tr.addEventListener('click', () => openEditModal(index));
+
+      cartBody.appendChild(tr);
+    });
+
+    updateTotals();
+  }
+
+  function updateTotals() {
+    let totalQty = 0;
+    let totalAmount = 0;
+    cart.forEach(item => {
+      totalQty += item.qty;
+      totalAmount += item.qty * item.price;
+    });
+
+    totalQtyEl.textContent = totalQty;
+    totalAmountEl.textContent = formatMoney(totalAmount);
+
+    const cash = parseFloat(cashInput.value);
+    let change = 0;
+    if (isFinite(cash)) {
+      change = cash - totalAmount;
+    }
+    changeDisplay.textContent = formatMoney(change);
+  }
+
+  function openEditModal(index) {
+    editingIndex = index;
+    const item = cart[index];
+    if (!item) return;
+
+    editItemNameEl.textContent = item.name;
+    editQtyInput.value = item.qty;
+    editPriceInput.value = item.price.toFixed(2);
+
+    editModalBackdrop.style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    editingIndex = null;
+    editModalBackdrop.style.display = 'none';
+  }
+
+  function saveEdit() {
+    if (editingIndex === null) return;
+    const item = cart[editingIndex];
+    if (!item) return;
+
+      let qty = parseInt(editQtyInput.value, 10);
+      if (!isFinite(qty) || qty < 1) qty = 1;
+      let price = parseFloat(editPriceInput.value);
+      if (!isFinite(price) || price < 0) price = 0;
+
+      item.qty = qty;
+      item.price = price;
+
+      renderCart();
+      showStatus('Updated item: ' + item.name, 'ok');
+      closeEditModal();
+  }
+
+  function deleteCurrentItem() {
+    if (editingIndex === null) return;
+    const item = cart[editingIndex];
+    if (!item) return;
+    if (!confirm('Delete this item from cart?\n\n' + item.name)) return;
+    cart.splice(editingIndex, 1);
+    renderCart();
+    showStatus('Deleted item: ' + item.name, 'ok');
+    closeEditModal();
+  }
+
+  function clearCart() {
+    if (cart.length === 0) return;
+    if (!confirm('Clear all items from cart?')) return;
+    cart = [];
+    renderCart();
+    cashInput.value = '';
+    updateTotals();
+    showStatus('Cart cleared.', 'ok');
+  }
+
+  function generateReceipt() {
+    if (cart.length === 0) {
+      showStatus('No items in cart.', 'error');
+      return '';
+    }
+    let totalQty = 0;
+    let totalAmount = 0;
+    cart.forEach(item => {
+      totalQty += item.qty;
+      totalAmount += item.qty * item.price;
+    });
+    const cash = parseFloat(cashInput.value);
+    const change = isFinite(cash) ? (cash - totalAmount) : 0;
+
+    const now = new Date();
+    let lines = [];
+    lines.push('MATTMAT POS');
+    lines.push(now.toLocaleString());
+    lines.push('------------------------------');
+
+    cart.forEach(item => {
+      const lineName = item.name;
+      const lineQtyPrice = `${item.qty} x ${item.price.toFixed(2)} = ${(item.qty * item.price).toFixed(2)}`;
+      lines.push(lineName);
+      lines.push('   ' + lineQtyPrice);
+    });
+
+    lines.push('------------------------------');
+    lines.push(`TOTAL QTY : ${totalQty}`);
+    lines.push(`TOTAL     : ${totalAmount.toFixed(2)}`);
+
+    if (isFinite(cash)) {
+      lines.push(`CASH      : ${cash.toFixed(2)}`);
+      lines.push(`CHANGE    : ${change.toFixed(2)}`);
+    }
+
+    lines.push('------------------------------');
+    lines.push('Thank you!');
+
+    return lines.join('\n');
+  }
+
+  async function copyReceiptToClipboard() {
+    const text = generateReceipt();
+    if (!text) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        showStatus('Receipt copied to clipboard.', 'ok');
+      } else {
+        // Fallback: temporary textarea
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showStatus('Receipt copied to clipboard.', 'ok');
+      }
+    } catch (e) {
+      console.error(e);
+      showStatus('Failed to copy receipt.', 'error');
+      alert(text); // at least show the text
+    }
+  }
+
+  function showStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.classList.remove('ok', 'error');
+    if (type === 'ok') statusEl.classList.add('ok');
+    if (type === 'error') statusEl.classList.add('error');
+  }
+
+  // EVENTS
+  searchInput.addEventListener('input', () => {
+    renderResults(searchInput.value);
+  });
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const q = searchInput.value.trim();
+      if (!q) return;
+
+      // 1) Exact barcode match
+      const byBarcode = products.find(p => p.barcode && p.barcode.toString().toLowerCase() === q.toLowerCase());
+      if (byBarcode) {
+        addToCartFromProduct(byBarcode);
+        searchInput.value = '';
+        resultsDiv.innerHTML = '';
+        return;
+      }
+
+      // 2) If exactly one name partial match, add that
+      const matches = products.filter(p =>
+        (p.name && p.name.toLowerCase().includes(q.toLowerCase())) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q.toLowerCase()))
+      );
+      if (matches.length === 1) {
+        addToCartFromProduct(matches[0]);
+        searchInput.value = '';
+        resultsDiv.innerHTML = '';
+        return;
+      }
+
+      // else just show the filtered list
+      renderResults(q);
+    }
+  });
+
+  cashInput.addEventListener('input', updateTotals);
+
+  btnClear.addEventListener('click', clearCart);
+  btnCopyReceipt.addEventListener('click', copyReceiptToClipboard);
+
+  btnCancelEdit.addEventListener('click', closeEditModal);
+  btnSaveEdit.addEventListener('click', saveEdit);
+  btnDeleteItem.addEventListener('click', deleteCurrentItem);
+
+  editModalBackdrop.addEventListener('click', e => {
+    if (e.target === editModalBackdrop) {
+      closeEditModal();
+    }
+  });
+
+  // INIT
+  products = loadProducts();
+  if (products.length === 0) {
+    showStatus('No products found in localStorage. Make sure your inventory page already saved items.', 'error');
+  } else {
+    showStatus('Loaded ' + products.length + ' products from inventory.', 'ok');
+  }
+  renderCart();
+  setTimeout(() => { searchInput.focus(); }, 300);
+})();
+</script>
+</body>
+</html>
