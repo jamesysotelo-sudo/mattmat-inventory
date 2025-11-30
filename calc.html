@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Amount × QTY Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f3f3;
+      color: #222;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 12px 180px;
+      min-height: 100vh;
+    }
+
+    h1 { text-align: center; margin: 8px 0; font-size: 20px; }
+
+    .totals {
+      display: flex; justify-content: space-between;
+      background: #fff; padding: 12px; border-radius: 10px;
+      font-weight: 600; margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    .label { font-size: 12px; color: #777; display: block; }
+
+    .btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+
+    .btn-main {
+      flex: 1; background: #007aff; color: #fff;
+      font-size: 16px; padding: 12px; border-radius: 10px;
+      font-weight: 600;
+    }
+    .btn-reset {
+      width: 56px; background: #fff;
+      border-radius: 10px; font-size: 24px; font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* TABLE SCROLLABLE */
+    .table {
+      background: #fff; border-radius: 10px;
+      padding: 8px; max-height: 60vh; overflow-y: auto;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .table-header, .item-row {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap: 6px; align-items: center;
+      padding: 4px 0;
+    }
+
+    .table-header {
+      font-weight: 600; font-size: 13px; color: #666;
+      border-bottom: 1px solid #eee; margin-bottom: 4px;
+    }
+
+    .amount-input {
+      width: 100%; padding: 8px;
+      font-size: 16px; border: 1px solid #ddd;
+      border-radius: 8px; background: #fafafa;
+      text-align: right;
+    }
+    .item-row.active .amount-input {
+      background: #fff; border-color: #007aff;
+      box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
+    }
+
+    .qty-control {
+      display: flex; justify-content: center; align-items: center; gap: 4px;
+    }
+    .qty-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #f0f0f0; font-size: 18px; font-weight: 600;
+    }
+    .qty-display {
+      min-width: 32px; text-align: center;
+      border: 1px solid #ddd; border-radius: 6px;
+      background: #fafafa; padding: 4px; font-size: 16px;
+    }
+
+    .row-total {
+      text-align: right;
+      font-size: 16px;
+      font-weight: 600;
+      padding-right: 6px;
+    }
+
+    /* Number pad bottom fixed */
+    .pad {
+      position: fixed;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: #fff; padding: 12px;
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -3px 10px rgba(0,0,0,0.15);
+      z-index: 999;
+    }
+
+    .pad-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .num-key {
+      padding: 14px 0; background: #efefef;
+      border-radius: 10px; font-size: 20px;
+    }
+
+    .key-secondary { background: #d1d1d6; }
+    .key-danger { background: #ff3b30; color: #fff; }
+    .key-main { background: #007aff; color: #fff; }
+
+    .num-key[data-key="down"] {
+      height: 120px !important;
+      font-size: 32px !important;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+    }
+    .modal {
+      background: #fff; padding: 16px; border-radius: 16px;
+      width: 92%; max-width: 420px;
+    }
+    .modal-title { text-align: center; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .modal-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .modal-row input {
+      width: 140px; padding: 10px; border-radius: 8px;
+      border: 1px solid #ccc; text-align: right; font-size: 16px;
+    }
+
+    .modal-amount {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-done,
+    .btn-cancel {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .btn-done { background: #34c759; color: #fff; }
+    .btn-cancel { background: #ccc; color: #000; }
+
+    .cash-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .cash-buttons button {
+      padding: 10px 4px;
+      border-radius: 10px;
+      font-size: 15px;
+      background: #f2f2f7;
+      font-weight: 600;
+    }
+    .cash-buttons button[data-action="manual"] {
+      grid-column: span 2;
+      background: #007aff;
+      color: #fff;
+    }
+    .cash-buttons button[data-action="clear"] {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    .change-box {
+      min-width: 100px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      text-align: right;
+      font-weight: 700;
+      background: #f2f2f7;
+      color: #333;
+    }
+    .change-ok {
+      background: #34c759;
+      color: #fff;
+    }
+    .change-bad {
+      background: #ff3b30;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <h1>Amount × QTY Calculator</h1>
+
+  <div class="totals">
+    <div>
+      <span class="label">Total Amount</span>
+      <span id="totalAmount">0.00</span>
+    </div>
+    <div style="text-align:right;">
+      <span class="label">Total QTY</span>
+      <span id="totalQty">0</span>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-main" id="openSummaryBtn">DONE</button>
+    <button class="btn-reset" id="resetBtn">↻</button>
+  </div>
+
+  <div class="table">
+    <div class="table-header">
+      <div>Amount</div>
+      <div style="text-align:center;">QTY</div>
+      <div style="text-align:right;">Total</div>
+    </div>
+    <div id="rowsContainer"></div>
+  </div>
+</div>
+
+<!-- Number Pad -->
+<div class="pad">
+  <div class="pad-grid">
+    <button class="num-key" data-key="7">7</button>
+    <button class="num-key" data-key="8">8</button>
+    <button class="num-key" data-key="9">9</button>
+    <button class="num-key key-secondary" data-key="back">⌫</button>
+
+    <button class="num-key" data-key="4">4</button>
+    <button class="num-key" data-key="5">5</button>
+    <button class="num-key" data-key="6">6</button>
+    <button class="num-key key-danger" data-key="allclear">AC</button>
+
+    <button class="num-key" data-key="1">1</button>
+    <button class="num-key" data-key="2">2</button>
+    <button class="num-key" data-key="3">3</button>
+
+    <button class="num-key key-main" data-key="down" style="grid-row: span 2;">↓</button>
+
+    <button class="num-key" data-key="0">0</button>
+    <button class="num-key" data-key="00">00</button>
+    <button class="num-key" data-key=".">.</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-title">Payment Summary</div>
+
+    <div class="modal-row">
+      <div>Total Amount:</div>
+      <div id="modalTotalAmount" class="modal-amount">0.00</div>
+    </div>
+
+    <div class="modal-row">
+      <div>Cash:</div>
+      <input type="number" id="cashInput" />
+    </div>
+
+    <div class="modal-row">
+      <div>Change:</div>
+      <div id="changeAmount" class="change-box">0.00</div>
+    </div>
+
+    <!-- Cash buttons moved below Change -->
+    <div class="cash-buttons">
+      <button type="button" data-cash="5">5</button>
+      <button type="button" data-cash="10">10</button>
+      <button type="button" data-cash="20">20</button>
+      <button type="button" data-cash="50">50</button>
+
+      <button type="button" data-cash="100">100</button>
+      <button type="button" data-cash="500">500</button>
+      <button type="button" data-cash="1000">1000</button>
+      <button type="button" data-action="clear">Clear</button>
+
+      <button type="button" data-action="manual">Enter Manually</button>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-done" id="modalDoneBtn">Done</button>
+      <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let activeRowIndex = 0;
+
+const rowsContainer = document.getElementById("rowsContainer");
+const totalAmountEl = document.getElementById("totalAmount");
+const totalQtyEl = document.getElementById("totalQty");
+
+function createRow(index) {
+  const row = document.createElement("div");
+  row.className = "item-row";
+  row.dataset.index = index;
+
+  row.innerHTML = `
+    <div><input type="text" class="amount-input" readonly placeholder="0.00"></div>
+    <div class="qty-control">
+      <button class="qty-btn" data-action="minus">-</button>
+      <div class="qty-display">1</div>
+      <button class="qty-btn" data-action="plus">+</button>
+    </div>
+    <div class="row-total">0.00</div>
+  `;
+
+  // Choose row when tapping amount
+  row.querySelector(".amount-input").onclick = () => setActiveRow(index);
+
+  // Qty +/- buttons
+  row.querySelectorAll(".qty-btn").forEach(btn => {
+    btn.onclick = () => {
+      const qtyEl = row.querySelector(".qty-display");
+      let qty = parseInt(qtyEl.textContent) || 0;
+      qty = btn.dataset.action === "minus" ? qty - 1 : qty + 1;
+      qty = Math.max(0, qty);
+      qtyEl.textContent = qty;
+      updateRowTotal(index);
+      calculateTotals();
+    };
+  });
+
+  return row;
+}
+
+function addRow() {
+  const row = createRow(rowsContainer.children.length);
+  rowsContainer.appendChild(row);
+}
+
+function setActiveRow(index) {
+  activeRowIndex = index;
+  document.querySelectorAll(".item-row").forEach(r => r.classList.remove("active"));
+  const row = document.querySelector(`.item-row[data-index="${index}"]`);
+  if (row) row.classList.add("active");
+}
+
+function updateRowTotal(index) {
+  const row = document.querySelector(`.item-row[data-index="${index}"]`);
+  if (!row) return;
+  const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
+  const qty = parseInt(row.querySelector(".qty-display").textContent) || 0;
+  const total = amt * qty;
+  row.querySelector(".row-total").textContent = total.toFixed(2);
+}
+
+function calculateTotals() {
+  let totalAmount = 0, totalQty = 0;
+
+  document.querySelectorAll(".item-row").forEach(row => {
+    const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
+    const qty = parseInt(row.querySelector(".qty-display").textContent) || 0;
+    totalAmount += amt * qty;
+    totalQty += qty;
+  });
+
+  totalAmountEl.textContent = totalAmount.toFixed(2);
+  totalQtyEl.textContent = totalQty;
+}
+
+function handlePadInput(key) {
+  const row = document.querySelector(`.item-row[data-index="${activeRowIndex}"]`);
+  if (!row) return;
+
+  const input = row.querySelector(".amount-input");
+  let value = input.value || "";
+
+  if (key === "back") {
+    value = value.slice(0, -1);
+  } else if (key === "allclear") {
+    resetAll();
+    return;
+  } else if (key === "down") {
+    handleDown();
+    return;
+  } else if (key === ".") {
+    if (!value.includes(".")) value += ".";
+  } else if (key === "00") {
+    if (value !== "") value += "00";
+  } else {
+    value += key;
+  }
+
+  input.value = value;
+  updateRowTotal(activeRowIndex);
+  calculateTotals();
+}
+
+function handleDown() {
+  if (activeRowIndex >= rowsContainer.children.length - 1) {
+    addRow();
+  }
+  setActiveRow(activeRowIndex + 1);
+}
+
+/* CHANGE COLOR HANDLING */
+const changeAmount = document.getElementById("changeAmount");
+const cashInput = document.getElementById("cashInput");
+
+function setChangeState(state) {
+  changeAmount.classList.remove("change-ok", "change-bad");
+  if (state === "ok") changeAmount.classList.add("change-ok");
+  if (state === "bad") changeAmount.classList.add("change-bad");
+}
+
+function updateChange() {
+  const total = parseFloat(totalAmountEl.textContent) || 0;
+  const cash = parseFloat(cashInput.value) || 0;
+  const change = cash - total;
+
+  if (isNaN(change)) {
+    changeAmount.textContent = "0.00";
+    setChangeState(null);
+    return;
+  }
+
+  changeAmount.textContent = Math.max(change, 0).toFixed(2);
+
+  if (cash === 0 || total === 0) {
+    setChangeState(null);
+  } else if (cash < total) {
+    setChangeState("bad");
+  } else {
+    setChangeState("ok");
+  }
+}
+
+function resetAll() {
+  rowsContainer.innerHTML = "";
+  addRow();
+  setActiveRow(0);
+  calculateTotals();
+  cashInput.value = "";
+  changeAmount.textContent = "0.00";
+  setChangeState(null);
+}
+
+/* Modal logic */
+const modal = document.getElementById("modalBackdrop");
+
+document.getElementById("openSummaryBtn").onclick = () => {
+  document.getElementById("modalTotalAmount").textContent = totalAmountEl.textContent;
+  modal.style.display = "flex";
+  cashInput.focus();
+};
+
+document.getElementById("modalCancelBtn").onclick = () => {
+  modal.style.display = "none";
+};
+
+document.getElementById("modalDoneBtn").onclick = () => {
+  resetAll();
+  modal.style.display = "none";
+};
+
+cashInput.oninput = updateChange;
+
+/* Cash quick buttons */
+document.querySelectorAll(".cash-buttons button").forEach(btn => {
+  btn.onclick = () => {
+    const add = parseFloat(btn.dataset.cash || "0");
+    const action = btn.dataset.action || "";
+
+    if (add) {
+      let current = parseFloat(cashInput.value) || 0;
+      current += add;
+      cashInput.value = current.toFixed(2);
+      updateChange();
+    } else if (action === "clear") {
+      cashInput.value = "";
+      changeAmount.textContent = "0.00";
+      setChangeState(null);
+    } else if (action === "manual") {
+      cashInput.focus();
+      cashInput.select && cashInput.select();
+    }
+  };
+});
+
+/* Keypad buttons */
+document.querySelectorAll(".num-key").forEach(btn => {
+  btn.onclick = () => handlePadInput(btn.dataset.key);
+});
+
+/* Reset main */
+document.getElementById("resetBtn").onclick = resetAll;
+
+/* Init */
+resetAll();
+</script>
+
+</body>
+</html>
