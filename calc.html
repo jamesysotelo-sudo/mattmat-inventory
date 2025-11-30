@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Amount × QTY Calculator</title>
+  <title>Amount × QTY Calculator (Dark)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f3f3f3;
-      color: #222;
+      background: #000000;
+      color: #f5f5f7;
     }
 
     .app {
@@ -21,71 +22,161 @@
       min-height: 100vh;
     }
 
-    h1 { text-align: center; margin: 8px 0; font-size: 20px; }
+    h1 {
+      text-align: center;
+      margin: 8px 0;
+      font-size: 20px;
+      color: #ffffff;
+    }
 
     .totals {
-      display: flex; justify-content: space-between;
-      background: #fff; padding: 12px; border-radius: 10px;
-      font-weight: 600; margin-bottom: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      background: #111111;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      border: 1px solid #2a2a2a;
     }
-    .label { font-size: 12px; color: #777; display: block; }
 
-    .btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
-    button { border: none; cursor: pointer; font-family: inherit; }
+    .label {
+      font-size: 12px;
+      color: #a0a0a0;
+      display: block;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
 
     .btn-main {
-      flex: 1; background: #007aff; color: #fff;
-      font-size: 16px; padding: 12px; border-radius: 10px;
+      flex: 1;
+      background: #0a84ff;
+      color: #ffffff;
+      font-size: 16px;
+      padding: 12px;
+      border-radius: 10px;
       font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.9);
     }
+
+    .btn-main:active {
+      transform: scale(0.97);
+      background: #0060df;
+    }
+
     .btn-reset {
-      width: 56px; background: #fff;
-      border-radius: 10px; font-size: 24px; font-weight: 700;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      width: 56px;
+      background: #111111;
+      border-radius: 10px;
+      font-size: 24px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.9);
+      color: #ffffff;
+      border: 1px solid #2a2a2a;
+    }
+
+    .btn-reset:active {
+      transform: scale(0.97);
+      background: #181818;
     }
 
     /* TABLE SCROLLABLE */
     .table {
-      background: #fff; border-radius: 10px;
-      padding: 8px; max-height: 60vh; overflow-y: auto;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      background: #111111;
+      border-radius: 10px;
+      padding: 8px;
+      max-height: 60vh;
+      overflow-y: auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.9);
+      border: 1px solid #2a2a2a;
     }
 
-    .table-header, .item-row {
+    .table-header,
+    .item-row {
       display: grid;
       grid-template-columns: 1.3fr 1fr 1fr;
-      gap: 6px; align-items: center;
+      gap: 6px;
+      align-items: center;
       padding: 4px 0;
     }
 
     .table-header {
-      font-weight: 600; font-size: 13px; color: #666;
-      border-bottom: 1px solid #eee; margin-bottom: 4px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #b0b0b0;
+      border-bottom: 1px solid #2a2a2a;
+      margin-bottom: 4px;
+      padding-bottom: 4px;
+    }
+
+    .item-row {
+      border-bottom: 1px solid #1f1f1f;
     }
 
     .amount-input {
-      width: 100%; padding: 8px;
-      font-size: 16px; border: 1px solid #ddd;
-      border-radius: 8px; background: #fafafa;
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #333333;
+      border-radius: 8px;
+      background: #151515;
       text-align: right;
+      color: #f5f5f7;
     }
+
+    .amount-input::placeholder {
+      color: #555555;
+    }
+
     .item-row.active .amount-input {
-      background: #fff; border-color: #007aff;
-      box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
+      background: #1f1f1f;
+      border-color: #0a84ff;
+      box-shadow: 0 0 0 2px rgba(10,132,255,0.4);
     }
 
     .qty-control {
-      display: flex; justify-content: center; align-items: center; gap: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
     }
+
     .qty-btn {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: #f0f0f0; font-size: 18px; font-weight: 600;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #202020;
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+      border: 1px solid #333333;
     }
+
+    .qty-btn:active {
+      transform: scale(0.96);
+      background: #2b2b2b;
+    }
+
     .qty-display {
-      min-width: 32px; text-align: center;
-      border: 1px solid #ddd; border-radius: 6px;
-      background: #fafafa; padding: 4px; font-size: 16px;
+      min-width: 32px;
+      text-align: center;
+      border: 1px solid #333333;
+      border-radius: 6px;
+      background: #151515;
+      padding: 4px;
+      font-size: 16px;
+      color: #f5f5f7;
     }
 
     .row-total {
@@ -93,31 +184,60 @@
       font-size: 16px;
       font-weight: 600;
       padding-right: 6px;
+      color: #f5f5f7;
     }
 
     /* Number pad bottom fixed */
     .pad {
       position: fixed;
-      bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 480px;
-      background: #fff; padding: 12px;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: #050505;
+      padding: 12px;
       border-radius: 16px 16px 0 0;
-      box-shadow: 0 -3px 10px rgba(0,0,0,0.15);
+      box-shadow: 0 -4px 12px rgba(0,0,0,1);
+      border-top: 1px solid #181818;
       z-index: 999;
     }
 
     .pad-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
+
     .num-key {
-      padding: 14px 0; background: #efefef;
-      border-radius: 10px; font-size: 20px;
+      padding: 14px 0;
+      background: #1c1c1e;
+      border-radius: 10px;
+      font-size: 20px;
+      color: #f5f5f7;
+      border: 1px solid #2a2a2a;
     }
 
-    .key-secondary { background: #d1d1d6; }
-    .key-danger { background: #ff3b30; color: #fff; }
-    .key-main { background: #007aff; color: #fff; }
+    .num-key:active {
+      transform: scale(0.96);
+      background: #2c2c2e;
+    }
+
+    .key-secondary {
+      background: #2c2c2e;
+    }
+
+    .key-danger {
+      background: #b00020;
+      color: #ffffff;
+      border-color: #ff3b30;
+    }
+
+    .key-main {
+      background: #0a84ff;
+      color: #ffffff;
+      border-color: #0a84ff;
+    }
 
     .num-key[data-key="down"] {
       height: 120px !important;
@@ -126,15 +246,34 @@
 
     /* Modal */
     .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-      display: none; align-items: center; justify-content: center;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
       z-index: 2000;
     }
+
     .modal {
-      background: #fff; padding: 16px; border-radius: 16px;
-      width: 92%; max-width: 420px;
+      background: #111111;
+      padding: 16px;
+      border-radius: 16px;
+      width: 92%;
+      max-width: 420px;
+      box-shadow: 0 8px 24px rgba(0,0,0,1);
+      border: 1px solid #2a2a2a;
+      color: #f5f5f7;
     }
-    .modal-title { text-align: center; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+
+    .modal-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+
     .modal-row {
       display: flex;
       justify-content: space-between;
@@ -153,28 +292,49 @@
       text-align: right;
       box-sizing: border-box;
     }
+
     #modalTotalAmount.summary-box {
-      background: #f2f2f7;
+      background: #1c1c1e;
+      color: #ffffff;
+      border: 1px solid #333333;
     }
+
     input.summary-box {
-      border: 1px solid #ccc;
-      background: #ffffff;
+      border: 1px solid #333333;
+      background: #151515;
+      color: #ffffff;
+    }
+
+    input.summary-box:focus {
+      outline: none;
+      border-color: #0a84ff;
+      box-shadow: 0 0 0 2px rgba(10,132,255,0.4);
     }
 
     .change-box {
-      background: #f2f2f7;
-      color: #333;
-    }
-    .change-ok {
-      background: #34c759;
-      color: #fff;
-    }
-    .change-bad {
-      background: #ff3b30;
-      color: #fff;
+      background: #1c1c1e;
+      color: #f5f5f7;
+      border: 1px solid #333333;
     }
 
-    .modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
+    .change-ok {
+      background: #1e8e3e;
+      color: #f5f5f7;
+      border-color: #34c759;
+    }
+
+    .change-bad {
+      background: #b00020;
+      color: #ffffff;
+      border-color: #ff453a;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
     .btn-done,
     .btn-cancel {
       flex: 1;
@@ -183,8 +343,28 @@
       font-size: 16px;
       font-weight: 700;
     }
-    .btn-done { background: #34c759; color: #fff; }
-    .btn-cancel { background: #ccc; color: #000; }
+
+    .btn-done {
+      background: #1e8e3e;
+      color: #ffffff;
+      border: 1px solid #34c759;
+    }
+
+    .btn-done:active {
+      transform: scale(0.97);
+      background: #16662d;
+    }
+
+    .btn-cancel {
+      background: #2c2c2e;
+      color: #ffffff;
+      border: 1px solid #3a3a3c;
+    }
+
+    .btn-cancel:active {
+      transform: scale(0.97);
+      background: #3a3a3c;
+    }
 
     .cash-buttons {
       display: grid;
@@ -192,21 +372,33 @@
       gap: 8px;
       margin-top: 10px;
     }
+
     .cash-buttons button {
       padding: 10px 4px;
       border-radius: 10px;
       font-size: 15px;
-      background: #f2f2f7;
+      background: #1c1c1e;
       font-weight: 600;
+      color: #f5f5f7;
+      border: 1px solid #2a2a2a;
     }
+
+    .cash-buttons button:active {
+      transform: scale(0.96);
+      background: #2c2c2e;
+    }
+
     .cash-buttons button[data-action="manual"] {
       grid-column: span 2;
-      background: #007aff;
-      color: #fff;
+      background: #0a84ff;
+      color: #ffffff;
+      border-color: #0a84ff;
     }
+
     .cash-buttons button[data-action="clear"] {
-      background: #ff3b30;
-      color: #fff;
+      background: #b00020;
+      color: #ffffff;
+      border-color: #ff3b30;
     }
   </style>
 </head>
@@ -433,7 +625,7 @@ function setChangeState(state) {
 function updateChange() {
   const total = parseFloat(totalAmountEl.textContent) || 0;
   const cash = parseFloat(cashInput.value) || 0;
-  const diff = cash - total;           // can be negative
+  const diff = cash - total;  // can be negative
 
   if (isNaN(diff)) {
     changeAmount.textContent = "0.00";
@@ -469,7 +661,7 @@ const modal = document.getElementById("modalBackdrop");
 document.getElementById("openSummaryBtn").onclick = () => {
   document.getElementById("modalTotalAmount").textContent = totalAmountEl.textContent;
   modal.style.display = "flex";
-  // Do NOT focus cashInput here -> keyboard stays hidden
+  // keyboard stays hidden (cashInput is readonly)
 };
 
 document.getElementById("modalCancelBtn").onclick = () => {
