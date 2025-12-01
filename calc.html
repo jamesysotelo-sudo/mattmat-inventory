@@ -3,42 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <title>Amount × QTY Calculator (Dark)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <!-- Prevent iPhone Safari Zoom -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
   <style>
     * { box-sizing: border-box; }
 
-    body {
+    html, body {
+      -webkit-text-size-adjust: 100%;
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #000000;
+      background: #000;
       color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      touch-action: manipulation;
     }
 
     .app {
       max-width: 480px;
       margin: 0 auto;
-      padding: 12px 12px 180px;
+      padding: 12px 12px 20px;
       min-height: 100vh;
+      padding-bottom: 24px;
     }
 
     h1 {
       text-align: center;
       margin: 8px 0;
       font-size: 20px;
-      color: #ffffff;
     }
 
     .totals {
       display: flex;
       justify-content: space-between;
-      background: #111111;
+      background: #111;
       padding: 12px;
       border-radius: 10px;
       font-weight: 600;
       margin-bottom: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
       border: 1px solid #2a2a2a;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
     }
 
     .label {
@@ -53,52 +65,32 @@
       margin-bottom: 10px;
     }
 
-    button {
-      border: none;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
     .btn-main {
       flex: 1;
       background: #0a84ff;
-      color: #ffffff;
+      color: #fff;
       font-size: 16px;
       padding: 12px;
       border-radius: 10px;
       font-weight: 600;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.9);
-    }
-
-    .btn-main:active {
-      transform: scale(0.97);
-      background: #0060df;
     }
 
     .btn-reset {
       width: 56px;
-      background: #111111;
-      border-radius: 10px;
+      background: #111;
+      color: #fff;
       font-size: 24px;
-      font-weight: 700;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.9);
-      color: #ffffff;
+      border-radius: 10px;
       border: 1px solid #2a2a2a;
     }
 
-    .btn-reset:active {
-      transform: scale(0.97);
-      background: #181818;
-    }
-
-    /* TABLE SCROLLABLE */
+    /* TABLE */
     .table {
-      background: #111111;
+      background: #111;
       border-radius: 10px;
       padding: 8px;
-      max-height: 60vh;
+      max-height: 70vh;
       overflow-y: auto;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.9);
       border: 1px solid #2a2a2a;
     }
 
@@ -108,35 +100,29 @@
       grid-template-columns: 1.3fr 1fr 1fr;
       gap: 6px;
       align-items: center;
-      padding: 4px 0;
     }
 
     .table-header {
       font-weight: 600;
-      font-size: 13px;
       color: #b0b0b0;
       border-bottom: 1px solid #2a2a2a;
-      margin-bottom: 4px;
       padding-bottom: 4px;
-    }
-
-    .item-row {
-      border-bottom: 1px solid #1f1f1f;
+      margin-bottom: 4px;
     }
 
     .amount-input {
       width: 100%;
-      padding: 8px;
-      font-size: 16px;
-      border: 1px solid #333333;
-      border-radius: 8px;
+      padding: 10px;
+      font-size: 18px;
       background: #151515;
+      border-radius: 8px;
+      border: 1px solid #333;
       text-align: right;
-      color: #f5f5f7;
+      color: #fff;
     }
 
     .amount-input::placeholder {
-      color: #555555;
+      color: #555;
     }
 
     .item-row.active .amount-input {
@@ -155,96 +141,32 @@
     .qty-btn {
       width: 32px;
       height: 32px;
-      border-radius: 8px;
       background: #202020;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
       font-size: 18px;
-      font-weight: 600;
-      color: #ffffff;
-      border: 1px solid #333333;
-    }
-
-    .qty-btn:active {
-      transform: scale(0.96);
-      background: #2b2b2b;
     }
 
     .qty-display {
-      min-width: 32px;
-      text-align: center;
-      border: 1px solid #333333;
-      border-radius: 6px;
-      background: #151515;
+      width: 32px;
       padding: 4px;
-      font-size: 16px;
-      color: #f5f5f7;
+      text-align: center;
+      background: #151515;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 18px;
     }
 
     .row-total {
       text-align: right;
       font-size: 16px;
       font-weight: 600;
-      padding-right: 6px;
-      color: #f5f5f7;
+      color: #fff;
     }
 
-    /* Number pad bottom fixed */
-    .pad {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 480px;
-      background: #050505;
-      padding: 12px;
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -4px 12px rgba(0,0,0,1);
-      border-top: 1px solid #181818;
-      z-index: 999;
-    }
-
-    .pad-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .num-key {
-      padding: 14px 0;
-      background: #1c1c1e;
-      border-radius: 10px;
-      font-size: 20px;
-      color: #f5f5f7;
-      border: 1px solid #2a2a2a;
-    }
-
-    .num-key:active {
-      transform: scale(0.96);
-      background: #2c2c2e;
-    }
-
-    .key-secondary {
-      background: #2c2c2e;
-    }
-
-    .key-danger {
-      background: #b00020;
-      color: #ffffff;
-      border-color: #ff3b30;
-    }
-
-    .key-main {
-      background: #0a84ff;
-      color: #ffffff;
-      border-color: #0a84ff;
-    }
-
-    .num-key[data-key="down"] {
-      height: 120px !important;
-      font-size: 32px !important;
-    }
-
-    /* Modal */
+    /* MODAL */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -252,26 +174,25 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 2000;
+      z-index: 9999;
     }
 
     .modal {
-      background: #111111;
+      background: #111;
       padding: 16px;
       border-radius: 16px;
       width: 92%;
       max-width: 420px;
-      box-shadow: 0 8px 24px rgba(0,0,0,1);
       border: 1px solid #2a2a2a;
-      color: #f5f5f7;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,1);
     }
 
     .modal-title {
       text-align: center;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       margin-bottom: 12px;
-      color: #ffffff;
     }
 
     .modal-row {
@@ -281,28 +202,22 @@
       margin-bottom: 10px;
     }
 
-    /* Big bold boxes for Total, Cash, Change */
     .summary-box,
     input.summary-box {
       min-width: 150px;
-      padding: 10px 12px;
+      padding: 10px;
       border-radius: 10px;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       text-align: right;
+      background: #1c1c1e;
+      color: #fff;
+      border: 1px solid #333;
       box-sizing: border-box;
     }
 
-    #modalTotalAmount.summary-box {
-      background: #1c1c1e;
-      color: #ffffff;
-      border: 1px solid #333333;
-    }
-
     input.summary-box {
-      border: 1px solid #333333;
       background: #151515;
-      color: #ffffff;
     }
 
     input.summary-box:focus {
@@ -311,23 +226,8 @@
       box-shadow: 0 0 0 2px rgba(10,132,255,0.4);
     }
 
-    .change-box {
-      background: #1c1c1e;
-      color: #f5f5f7;
-      border: 1px solid #333333;
-    }
-
-    .change-ok {
-      background: #1e8e3e;
-      color: #f5f5f7;
-      border-color: #34c759;
-    }
-
-    .change-bad {
-      background: #b00020;
-      color: #ffffff;
-      border-color: #ff453a;
-    }
+    .change-ok { background: #1e8e3e !important; }
+    .change-bad { background: #b00020 !important; }
 
     .modal-buttons {
       display: flex;
@@ -335,73 +235,51 @@
       margin-top: 16px;
     }
 
-    .btn-done,
-    .btn-cancel {
+    .btn-done {
       flex: 1;
+      background: #1e8e3e;
+      color: #fff;
       padding: 12px;
       border-radius: 10px;
-      font-size: 16px;
       font-weight: 700;
     }
 
-    .btn-done {
-      background: #1e8e3e;
-      color: #ffffff;
-      border: 1px solid #34c759;
-    }
-
-    .btn-done:active {
-      transform: scale(0.97);
-      background: #16662d;
-    }
-
     .btn-cancel {
-      background: #2c2c2e;
-      color: #ffffff;
-      border: 1px solid #3a3a3c;
-    }
-
-    .btn-cancel:active {
-      transform: scale(0.97);
-      background: #3a3a3c;
+      flex: 1;
+      background: #333;
+      color: #fff;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
     }
 
     .cash-buttons {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-top: 10px;
     }
 
     .cash-buttons button {
-      padding: 10px 4px;
+      padding: 12px;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 16px;
       background: #1c1c1e;
-      font-weight: 600;
-      color: #f5f5f7;
-      border: 1px solid #2a2a2a;
-    }
-
-    .cash-buttons button:active {
-      transform: scale(0.96);
-      background: #2c2c2e;
+      color: #fff;
+      border: 1px solid #333;
     }
 
     .cash-buttons button[data-action="manual"] {
-      grid-column: span 2;
       background: #0a84ff;
-      color: #ffffff;
-      border-color: #0a84ff;
+      grid-column: span 2;
     }
 
     .cash-buttons button[data-action="clear"] {
       background: #b00020;
-      color: #ffffff;
-      border-color: #ff3b30;
     }
   </style>
 </head>
+
 <body>
 
 <div class="app">
@@ -433,32 +311,7 @@
   </div>
 </div>
 
-<!-- Number Pad -->
-<div class="pad">
-  <div class="pad-grid">
-    <button class="num-key" data-key="7">7</button>
-    <button class="num-key" data-key="8">8</button>
-    <button class="num-key" data-key="9">9</button>
-    <button class="num-key key-secondary" data-key="back">⌫</button>
-
-    <button class="num-key" data-key="4">4</button>
-    <button class="num-key" data-key="5">5</button>
-    <button class="num-key" data-key="6">6</button>
-    <button class="num-key key-danger" data-key="allclear">AC</button>
-
-    <button class="num-key" data-key="1">1</button>
-    <button class="num-key" data-key="2">2</button>
-    <button class="num-key" data-key="3">3</button>
-
-    <button class="num-key key-main" data-key="down" style="grid-row: span 2;">↓</button>
-
-    <button class="num-key" data-key="0">0</button>
-    <button class="num-key" data-key="00">00</button>
-    <button class="num-key" data-key=".">.</button>
-  </div>
-</div>
-
-<!-- Modal -->
+<!-- MODAL -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modal-title">Payment Summary</div>
@@ -476,22 +329,21 @@
 
     <div class="modal-row">
       <div>Change:</div>
-      <div id="changeAmount" class="summary-box change-box">0.00</div>
+      <div id="changeAmount" class="summary-box">0.00</div>
     </div>
 
-    <!-- Cash buttons -->
     <div class="cash-buttons">
-      <button type="button" data-cash="5">5</button>
-      <button type="button" data-cash="10">10</button>
-      <button type="button" data-cash="20">20</button>
-      <button type="button" data-cash="50">50</button>
+      <button data-cash="5">5</button>
+      <button data-cash="10">10</button>
+      <button data-cash="20">20</button>
+      <button data-cash="50">50</button>
 
-      <button type="button" data-cash="100">100</button>
-      <button type="button" data-cash="500">500</button>
-      <button type="button" data-cash="1000">1000</button>
-      <button type="button" data-action="clear">Clear</button>
+      <button data-cash="100">100</button>
+      <button data-cash="500">500</button>
+      <button data-cash="1000">1000</button>
+      <button data-action="clear">Clear</button>
 
-      <button type="button" data-action="manual">Enter Manually</button>
+      <button data-action="manual">Enter Manually</button>
     </div>
 
     <div class="modal-buttons">
@@ -508,13 +360,20 @@ const rowsContainer = document.getElementById("rowsContainer");
 const totalAmountEl = document.getElementById("totalAmount");
 const totalQtyEl = document.getElementById("totalQty");
 
+/* Create one row */
 function createRow(index) {
   const row = document.createElement("div");
   row.className = "item-row";
   row.dataset.index = index;
 
   row.innerHTML = `
-    <div><input type="text" class="amount-input" readonly placeholder="0.00"></div>
+    <div>
+      <input 
+        type="text" 
+        class="amount-input" 
+        inputmode="decimal" 
+        placeholder="0.00">
+    </div>
     <div class="qty-control">
       <button class="qty-btn" data-action="minus">-</button>
       <div class="qty-display">1</div>
@@ -523,17 +382,21 @@ function createRow(index) {
     <div class="row-total">0.00</div>
   `;
 
-  // Choose row when tapping amount
-  row.querySelector(".amount-input").onclick = () => setActiveRow(index);
+  const amountInput = row.querySelector(".amount-input");
+  const qtyDisplay = row.querySelector(".qty-display");
 
-  // Qty +/- buttons
+  amountInput.addEventListener("focus", () => setActiveRow(index));
+  amountInput.addEventListener("input", () => {
+    updateRowTotal(index);
+    calculateTotals();
+  });
+
   row.querySelectorAll(".qty-btn").forEach(btn => {
     btn.onclick = () => {
-      const qtyEl = row.querySelector(".qty-display");
-      let qty = parseInt(qtyEl.textContent) || 0;
+      let qty = parseInt(qtyDisplay.textContent) || 0;
       qty = btn.dataset.action === "minus" ? qty - 1 : qty + 1;
       qty = Math.max(0, qty);
-      qtyEl.textContent = qty;
+      qtyDisplay.textContent = qty;
       updateRowTotal(index);
       calculateTotals();
     };
@@ -550,8 +413,8 @@ function addRow() {
 function setActiveRow(index) {
   activeRowIndex = index;
   document.querySelectorAll(".item-row").forEach(r => r.classList.remove("active"));
-  const row = document.querySelector(`.item-row[data-index="${index}"]`);
-  if (row) row.classList.add("active");
+  const activeRow = document.querySelector(`.item-row[data-index="${index}"]`);
+  if (activeRow) activeRow.classList.add("active");
 }
 
 function updateRowTotal(index) {
@@ -564,7 +427,8 @@ function updateRowTotal(index) {
 }
 
 function calculateTotals() {
-  let totalAmount = 0, totalQty = 0;
+  let totalAmount = 0;
+  let totalQty = 0;
 
   document.querySelectorAll(".item-row").forEach(row => {
     const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
@@ -577,91 +441,32 @@ function calculateTotals() {
   totalQtyEl.textContent = totalQty;
 }
 
-function handlePadInput(key) {
-  const row = document.querySelector(`.item-row[data-index="${activeRowIndex}"]`);
-  if (!row) return;
-
-  const input = row.querySelector(".amount-input");
-  let value = input.value || "";
-
-  if (key === "back") {
-    value = value.slice(0, -1);
-  } else if (key === "allclear") {
-    resetAll();
-    return;
-  } else if (key === "down") {
-    handleDown();
-    return;
-  } else if (key === ".") {
-    if (!value.includes(".")) value += ".";
-  } else if (key === "00") {
-    if (value !== "") value += "00";
-  } else {
-    value += key;
-  }
-
-  input.value = value;
-  updateRowTotal(activeRowIndex);
-  calculateTotals();
-}
-
-function handleDown() {
-  if (activeRowIndex >= rowsContainer.children.length - 1) {
-    addRow();
-  }
-  setActiveRow(activeRowIndex + 1);
-}
-
-/* CHANGE COLOR HANDLING */
-const changeAmount = document.getElementById("changeAmount");
+/* Payment Summary */
+const modal = document.getElementById("modalBackdrop");
 const cashInput = document.getElementById("cashInput");
+const changeAmount = document.getElementById("changeAmount");
 
-function setChangeState(state) {
-  changeAmount.classList.remove("change-ok", "change-bad");
-  if (state === "ok") changeAmount.classList.add("change-ok");
-  if (state === "bad") changeAmount.classList.add("change-bad");
-}
-
-function updateChange() {
+function setChangeState() {
   const total = parseFloat(totalAmountEl.textContent) || 0;
   const cash = parseFloat(cashInput.value) || 0;
-  const diff = cash - total;  // can be negative
-
-  if (isNaN(diff)) {
-    changeAmount.textContent = "0.00";
-    setChangeState(null);
-    return;
-  }
+  const diff = cash - total;
 
   changeAmount.textContent = diff.toFixed(2);
+  changeAmount.classList.remove("change-ok", "change-bad");
 
-  if (total === 0 && cash === 0) {
-    setChangeState(null);
-  } else if (cash < total) {
-    setChangeState("bad");
+  if (!total && !cash) return;
+
+  if (cash < total) {
+    changeAmount.classList.add("change-bad");
   } else {
-    setChangeState("ok");
+    changeAmount.classList.add("change-ok");
   }
 }
-
-function resetAll() {
-  rowsContainer.innerHTML = "";
-  addRow();
-  setActiveRow(0);
-  calculateTotals();
-  cashInput.value = "";
-  cashInput.readOnly = true;   // hide keyboard again for next time
-  changeAmount.textContent = "0.00";
-  setChangeState(null);
-}
-
-/* Modal logic */
-const modal = document.getElementById("modalBackdrop");
 
 document.getElementById("openSummaryBtn").onclick = () => {
   document.getElementById("modalTotalAmount").textContent = totalAmountEl.textContent;
+  cashInput.readOnly = true;
   modal.style.display = "flex";
-  // keyboard stays hidden (cashInput is readonly)
 };
 
 document.getElementById("modalCancelBtn").onclick = () => {
@@ -673,7 +478,7 @@ document.getElementById("modalDoneBtn").onclick = () => {
   modal.style.display = "none";
 };
 
-cashInput.oninput = updateChange;
+cashInput.oninput = setChangeState;
 
 /* Cash quick buttons */
 document.querySelectorAll(".cash-buttons button").forEach(btn => {
@@ -682,16 +487,15 @@ document.querySelectorAll(".cash-buttons button").forEach(btn => {
     const action = btn.dataset.action || "";
 
     if (add) {
-      let current = parseFloat(cashInput.value) || 0;
+      let current = parseFloat(cashInput.value || 0);
       current += add;
       cashInput.value = current.toFixed(2);
-      updateChange();
+      setChangeState();
     } else if (action === "clear") {
       cashInput.value = "";
       changeAmount.textContent = "0.00";
-      setChangeState(null);
+      changeAmount.classList.remove("change-ok","change-bad");
     } else if (action === "manual") {
-      // Allow typing: remove readonly then focus
       cashInput.readOnly = false;
       cashInput.focus();
       cashInput.select && cashInput.select();
@@ -699,12 +503,18 @@ document.querySelectorAll(".cash-buttons button").forEach(btn => {
   };
 });
 
-/* Keypad buttons */
-document.querySelectorAll(".num-key").forEach(btn => {
-  btn.onclick = () => handlePadInput(btn.dataset.key);
-});
+/* Reset */
+function resetAll() {
+  rowsContainer.innerHTML = "";
+  addRow();
+  setActiveRow(0);
+  calculateTotals();
+  cashInput.value = "";
+  changeAmount.textContent = "0.00";
+  changeAmount.classList.remove("change-ok","change-bad");
+  cashInput.readOnly = true;
+}
 
-/* Reset main */
 document.getElementById("resetBtn").onclick = resetAll;
 
 /* Init */
