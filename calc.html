@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <title>Amount × QTY Calculator (Dark)</title>
 
-  <!-- Prevent iPhone Safari Zoom -->
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
@@ -40,7 +39,7 @@
       font-size: 20px;
     }
 
-    /* Bigger totals at the top */
+    /* BIG TOTALS */
     .totals {
       display: flex;
       justify-content: space-between;
@@ -211,7 +210,7 @@
       font-size: 32px !important;
     }
 
-    /* MODAL */
+    /* MODAL (PAYMENT) */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -301,14 +300,15 @@
     .cash-buttons {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 10px;
       margin-top: 10px;
     }
 
+    /* Bigger cash buttons */
     .cash-buttons button {
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 16px;
+      padding: 16px 8px;
+      border-radius: 12px;
+      font-size: 18px;
       background: #1c1c1e;
       color: #fff;
       border: 1px solid #333;
@@ -321,6 +321,58 @@
 
     .cash-buttons button[data-action="clear"] {
       background: #b00020;
+    }
+
+    /* RECEIPT MODAL */
+    #receiptBackdrop .modal {
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .receipt-item-row {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 10px;
+      background: #151515;
+      border: 1px solid #2a2a2a;
+    }
+
+    .receipt-item-row label {
+      display: block;
+      font-size: 13px;
+      color: #a0a0a0;
+      margin-bottom: 4px;
+    }
+
+    .receipt-item-row input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #fff;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .receipt-meta {
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    #receiptText {
+      width: 100%;
+      min-height: 160px;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #000;
+      color: #fff;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      white-space: pre;
+      resize: vertical;
     }
   </style>
 </head>
@@ -381,7 +433,7 @@
   </div>
 </div>
 
-<!-- MODAL -->
+<!-- PAYMENT MODAL -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modal-title">Payment Summary</div>
@@ -393,7 +445,6 @@
 
     <div class="modal-row">
       <div>Cash:</div>
-      <!-- readonly so keyboard is hidden until Enter Manually -->
       <input type="number" id="cashInput" class="summary-box" readonly />
     </div>
 
@@ -423,27 +474,44 @@
   </div>
 </div>
 
+<!-- RECEIPT MODAL -->
+<div class="modal-backdrop" id="receiptBackdrop">
+  <div class="modal">
+    <div class="modal-title">Receipt Items</div>
+    <div id="receiptItemsContainer"></div>
+
+    <textarea id="receiptText" readonly></textarea>
+
+    <div class="modal-buttons">
+      <button class="btn-done" id="copyReceiptBtn">Copy Receipt</button>
+      <button class="btn-cancel" id="receiptCloseBtn">Close & Reset</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let activeRowIndex = 0;
+let lastPaymentData = null;
 
-const rowsContainer = document.getElementById("rowsContainer");
-const totalAmountEl = document.getElementById("totalAmount");
-const totalQtyEl = document.getElementById("totalQty");
+const rowsContainer  = document.getElementById("rowsContainer");
+const totalAmountEl  = document.getElementById("totalAmount");
+const totalQtyEl     = document.getElementById("totalQty");
+const modal          = document.getElementById("modalBackdrop");
+const cashInput      = document.getElementById("cashInput");
+const changeAmount   = document.getElementById("changeAmount");
+const receiptBackdrop       = document.getElementById("receiptBackdrop");
+const receiptItemsContainer = document.getElementById("receiptItemsContainer");
+const receiptText           = document.getElementById("receiptText");
 
 /* CREATE ROW */
 function createRow(index) {
   const row = document.createElement("div");
   row.className = "item-row";
   row.dataset.index = index;
-  row.dataset.childAdded = "0"; // for auto-add logic
 
   row.innerHTML = `
     <div>
-      <input 
-        type="text" 
-        class="amount-input" 
-        readonly 
-        placeholder="0.00">
+      <input type="text" class="amount-input" readonly placeholder="0.00">
     </div>
     <div class="qty-control">
       <button class="qty-btn" data-action="minus">-</button>
@@ -453,17 +521,15 @@ function createRow(index) {
     <div class="row-total">0.00</div>
   `;
 
-  const amountInput = row.querySelector(".amount-input");
-  const qtyDisplay = row.querySelector(".qty-display");
-
-  amountInput.addEventListener("click", () => setActiveRow(index));
+  row.querySelector(".amount-input").onclick = () => setActiveRow(index);
 
   row.querySelectorAll(".qty-btn").forEach(btn => {
     btn.onclick = () => {
-      let qty = parseInt(qtyDisplay.textContent) || 0;
+      const qtyEl = row.querySelector(".qty-display");
+      let qty = parseInt(qtyEl.textContent);
       qty = btn.dataset.action === "minus" ? qty - 1 : qty + 1;
       qty = Math.max(0, qty);
-      qtyDisplay.textContent = qty;
+      qtyEl.textContent = qty;
       updateRowTotal(index);
       calculateTotals();
     };
@@ -480,8 +546,8 @@ function addRow() {
 function setActiveRow(index) {
   activeRowIndex = index;
   document.querySelectorAll(".item-row").forEach(r => r.classList.remove("active"));
-  const activeRow = document.querySelector(`.item-row[data-index="${index}"]`);
-  if (activeRow) activeRow.classList.add("active");
+  const active = document.querySelector(`.item-row[data-index="${index}"]`);
+  if (active) active.classList.add("active");
 }
 
 function getRow(index) {
@@ -490,46 +556,27 @@ function getRow(index) {
 
 function updateRowTotal(index) {
   const row = getRow(index);
-  if (!row) return;
   const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
   const qty = parseInt(row.querySelector(".qty-display").textContent) || 0;
-  const total = amt * qty;
-  row.querySelector(".row-total").textContent = total.toFixed(2);
+  row.querySelector(".row-total").textContent = (amt * qty).toFixed(2);
 }
 
 function calculateTotals() {
-  let totalAmount = 0;
+  let totalAmt = 0;
   let totalQty = 0;
 
   document.querySelectorAll(".item-row").forEach(row => {
     const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
     const qty = parseInt(row.querySelector(".qty-display").textContent) || 0;
-    totalAmount += amt * qty;
+    totalAmt += amt * qty;
     totalQty += qty;
   });
 
-  totalAmountEl.textContent = totalAmount.toFixed(2);
-  totalQtyEl.textContent = totalQty;
+  totalAmountEl.textContent = totalAmt.toFixed(2);
+  totalQtyEl.textContent    = totalQty;
 }
 
-/* AUTO-ADD ROW WHEN LAST AMOUNT IS FILLED */
-function autoAddRowIfLastAndFilled(index) {
-  const row = getRow(index);
-  if (!row) return;
-
-  const isLast = index === rowsContainer.children.length - 1;
-  if (!isLast) return;
-
-  if (row.dataset.childAdded === "1") return;
-
-  const val = row.querySelector(".amount-input").value || "";
-  if (val === "") return;
-
-  addRow();
-  row.dataset.childAdded = "1";
-}
-
-/* NUMBER PAD HANDLING */
+/* NUMBER PAD */
 function handlePadInput(key) {
   const row = getRow(activeRowIndex);
   if (!row) return;
@@ -540,11 +587,12 @@ function handlePadInput(key) {
   if (key === "back") {
     value = value.slice(0, -1);
   } else if (key === "allclear") {
+    const confirmReset = confirm("This will clear all rows and totals. Continue?");
+    if (!confirmReset) return;
     resetAll();
     return;
   } else if (key === "down") {
-    // Move to next row, add if needed
-    if (activeRowIndex >= rowsContainer.children.length - 1) {
+    if (activeRowIndex === rowsContainer.children.length - 1) {
       addRow();
     }
     setActiveRow(activeRowIndex + 1);
@@ -560,7 +608,6 @@ function handlePadInput(key) {
   input.value = value;
   updateRowTotal(activeRowIndex);
   calculateTotals();
-  autoAddRowIfLastAndFilled(activeRowIndex);
 }
 
 document.querySelectorAll(".num-key").forEach(btn => {
@@ -568,14 +615,10 @@ document.querySelectorAll(".num-key").forEach(btn => {
 });
 
 /* PAYMENT SUMMARY */
-const modal = document.getElementById("modalBackdrop");
-const cashInput = document.getElementById("cashInput");
-const changeAmount = document.getElementById("changeAmount");
-
 function setChangeState() {
   const total = parseFloat(totalAmountEl.textContent) || 0;
-  const cash = parseFloat(cashInput.value) || 0;
-  const diff = cash - total;
+  const cash  = parseFloat(cashInput.value) || 0;
+  const diff  = cash - total;
 
   changeAmount.textContent = diff.toFixed(2);
   changeAmount.classList.remove("change-ok", "change-bad");
@@ -591,32 +634,25 @@ document.getElementById("openSummaryBtn").onclick = () => {
   modal.style.display = "flex";
 };
 
-document.getElementById("modalCancelBtn").onclick = () => {
-  modal.style.display = "none";
-};
-
-document.getElementById("modalDoneBtn").onclick = () => {
-  resetAll();
-  modal.style.display = "none";
-};
+document.getElementById("modalCancelBtn").onclick = () => modal.style.display = "none";
 
 cashInput.oninput = setChangeState;
 
 /* Cash quick buttons */
 document.querySelectorAll(".cash-buttons button").forEach(btn => {
   btn.onclick = () => {
-    const add = parseFloat(btn.dataset.cash || "0");
+    const add    = parseFloat(btn.dataset.cash || "0");
     const action = btn.dataset.action || "";
 
     if (add) {
-      let current = parseFloat(cashInput.value || 0);
-      current += add;
-      cashInput.value = current.toFixed(2);
+      let cash = parseFloat(cashInput.value || 0);
+      cash += add;
+      cashInput.value = cash.toFixed(2);
       setChangeState();
     } else if (action === "clear") {
       cashInput.value = "";
       changeAmount.textContent = "0.00";
-      changeAmount.classList.remove("change-ok","change-bad");
+      changeAmount.classList.remove("change-ok", "change-bad");
     } else if (action === "manual") {
       cashInput.readOnly = false;
       cashInput.focus();
@@ -624,6 +660,136 @@ document.querySelectorAll(".cash-buttons button").forEach(btn => {
     }
   };
 });
+
+/* COLLECT SNAPSHOT FOR RECEIPT */
+function collectPaymentSnapshot() {
+  const items = [];
+  document.querySelectorAll(".item-row").forEach(row => {
+    const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
+    const qty = parseInt(row.querySelector(".qty-display").textContent) || 0;
+    const subtotal = amt * qty;
+    if (qty > 0 && amt > 0) {
+      items.push({ amount: amt, qty, subtotal });
+    }
+  });
+
+  const total  = parseFloat(totalAmountEl.textContent) || 0;
+  const cash   = parseFloat(cashInput.value) || 0;
+  const change = parseFloat(changeAmount.textContent) || 0;
+
+  const now    = new Date();
+  const dateStr = now.toLocaleDateString();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  return { items, total, cash, change, dateStr, timeStr };
+}
+
+/* RECEIPT FORM */
+function openReceiptForm(snapshot) {
+  lastPaymentData = snapshot;
+  receiptItemsContainer.innerHTML = "";
+  receiptText.value = "";
+
+  snapshot.items.forEach((item, idx) => {
+    const div = document.createElement("div");
+    div.className = "receipt-item-row";
+    div.innerHTML = `
+      <label>Item ${idx + 1}</label>
+      <input type="text" class="receipt-name-input" data-index="${idx}" placeholder="Item name">
+      <div class="receipt-meta">
+        QTY: ${item.qty} &nbsp;&nbsp; Amount: ${item.amount.toFixed(2)} &nbsp;&nbsp; Subtotal: ${item.subtotal.toFixed(2)}
+      </div>
+    `;
+    receiptItemsContainer.appendChild(div);
+  });
+
+  receiptBackdrop.style.display = "flex";
+}
+
+function buildReceiptText() {
+  if (!lastPaymentData) return "";
+
+  const snap = lastPaymentData;
+  const names = [];
+
+  document.querySelectorAll(".receipt-name-input").forEach((input, i) => {
+    names[i] = input.value.trim() || `Item ${i + 1}`;
+  });
+
+  const lines = [];
+  lines.push("MATTMAT STORE");
+  lines.push("");
+  lines.push("Acknowledgement Receipt");
+  lines.push("------------------------------");
+  lines.push("Date: " + snap.dateStr);
+  lines.push("Time: " + snap.timeStr);
+  lines.push("------------------------------");
+  lines.push("Item");
+  lines.push("Qty x Amount\tSubtotal");
+  lines.push("------------------------------");
+
+  snap.items.forEach((item, i) => {
+    lines.push(names[i]);
+    const qtyPart = item.qty + " x " + item.amount.toFixed(2);
+    const subPart = item.subtotal.toFixed(2);
+    lines.push(qtyPart + "\t" + subPart);
+  });
+
+  lines.push("------------------------------");
+  lines.push("TOTAL:\t" + snap.total.toFixed(2));
+  lines.push("CASH:\t" + snap.cash.toFixed(2));
+  lines.push("CHANGE:\t" + snap.change.toFixed(2));
+  lines.push("------------------------------");
+  lines.push("");
+  lines.push("THANK YOU");
+  lines.push("..............");
+
+  return lines.join("\n");
+}
+
+/* Done button in payment modal */
+document.getElementById("modalDoneBtn").onclick = () => {
+  const snapshot = collectPaymentSnapshot();
+  const wantReceipt = confirm("Payment complete. Do you want to create a receipt?");
+
+  modal.style.display = "none";
+
+  if (wantReceipt && snapshot.items.length > 0) {
+    openReceiptForm(snapshot);
+  } else {
+    resetAll();
+  }
+};
+
+/* Copy receipt button */
+document.getElementById("copyReceiptBtn").onclick = () => {
+  const text = buildReceiptText();
+  if (!text) {
+    alert("No data to generate receipt.");
+    return;
+  }
+  receiptText.value = text;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Receipt copied to clipboard.");
+    }).catch(() => {
+      receiptText.select();
+      document.execCommand("copy");
+      alert("Receipt copied to clipboard.");
+    });
+  } else {
+    receiptText.select();
+    document.execCommand("copy");
+    alert("Receipt copied to clipboard.");
+  }
+};
+
+/* Close receipt + reset */
+document.getElementById("receiptCloseBtn").onclick = () => {
+  receiptBackdrop.style.display = "none";
+  resetAll();
+};
 
 /* RESET */
 function resetAll() {
@@ -633,11 +799,16 @@ function resetAll() {
   calculateTotals();
   cashInput.value = "";
   changeAmount.textContent = "0.00";
-  changeAmount.classList.remove("change-ok","change-bad");
-  cashInput.readOnly = true;
+  changeAmount.classList.remove("change-ok", "change-bad");
+  lastPaymentData = null;
 }
 
-document.getElementById("resetBtn").onclick = resetAll;
+/* Top reset with warning */
+document.getElementById("resetBtn").onclick = () => {
+  const confirmReset = confirm("This will clear all rows and totals. Continue?");
+  if (!confirmReset) return;
+  resetAll();
+};
 
 /* INIT */
 resetAll();
