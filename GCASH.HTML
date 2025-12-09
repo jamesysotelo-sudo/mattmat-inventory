@@ -2,439 +2,371 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>GCash Receipt OCR Helper</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <!-- Tesseract.js for OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-
+  <title>GCASH Cash Out Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
+
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
-      margin: 0; padding: 0;
-      background: #f3f6fb; color: #222;
-    }
-    .container { max-width: 960px; margin: 1.5rem auto; padding: 1rem; }
-    h1 { text-align: center; margin-bottom: 1rem; font-size: 1.5rem; }
-    .card {
-      background: #fff; border-radius: 10px;
-      padding: 1rem 1.25rem; margin-bottom: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-    .card h2 { margin: 0 0 .75rem; font-size: 1.2rem; }
-    label { font-size: .85rem; font-weight: 600; display: block; margin-bottom: .25rem; }
-    input, textarea, select {
-      width: 100%; padding: .5rem .6rem; border-radius: 6px;
-      border: 1px solid #ccc; font-size: .95rem;
-    }
-    textarea { min-height: 100px; resize: vertical; }
-    .row { display: flex; flex-wrap: wrap; gap: .75rem; }
-    .col-3 { flex: 0 0 calc(25% - .6rem); }
-    .col-4 { flex: 0 0 calc(33.333% - .5rem); }
-    .col-6 { flex: 0 0 calc(50% - .4rem); }
-    .col-12 { flex: 0 0 100%; }
-    @media (max-width: 640px) {
-      .col-3, .col-4, .col-6 { flex: 0 0 100%; }
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      font-family: Arial, sans-serif;
     }
 
-    .file-wrapper { display: flex; flex-direction: column; gap: .35rem; }
-    .file-label {
-      padding: .7rem 1.4rem; border-radius: 999px;
-      background: #0066ff; color: #fff;
-      cursor: pointer; font-size: .95rem; font-weight: 600;
-      max-width: 260px; text-align: center;
+    .container {
+      max-width: 480px;
+      margin: 20px auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .file-wrapper input[type="file"] { display: none; }
 
-    button {
-      border: none; border-radius: 999px;
-      padding: .45rem .9rem; font-size: .9rem;
-      cursor: pointer; font-weight: 600;
-      display: inline-flex; align-items: center; gap: .25rem;
+    h1 {
+      text-align: center;
+      margin-bottom: 4px;
+      font-size: 1.4rem;
     }
-    .btn-main { background: #0066ff; color: #fff; }
-    .btn-secondary { background: #e5e9f5; color: #222; }
-    .btn-small { font-size: .8rem; padding: .3rem .6rem; }
 
-    .status { font-size: .8rem; margin-top: .35rem; color: #555; }
-    .mono { font-family: "Courier New", monospace; }
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 16px;
+    }
 
-    .field-header {
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      font-family: "Courier New", monospace;
+      white-space: pre;
+    }
+
+    .row { margin-bottom: 12px; }
+
+    .inline-row {
       display: flex;
-      justify-content: space-between;
+      gap: 8px;
       align-items: center;
-      gap: .5rem;
-      margin-bottom: .25rem;
     }
-    .field-header span {
-      font-size: .85rem;
-      font-weight: 600;
+
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-blue { background: #007bff; }
+    .btn-gray { background: #6c757d; }
+    .btn-red { background: #dc3545; }
+
+    .btn-wide { width: 100%; }
+    .btn-small { font-size: 0.8rem; padding: 6px 10px; }
+
+    .note {
+      font-size: 0.75rem;
+      color: #777;
+      margin-top: 4px;
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>GCash Receipt OCR Helper</h1>
+  <div class="container">
+    <h1>GCASH - CASH OUT</h1>
+    <div class="subtitle">Auto service fee (2% based on 5s) + receipt generator</div>
 
-  <!-- 1. Upload + OCR -->
-  <div class="card">
-    <h2>1. Upload GCash Receipt</h2>
-    <div class="file-wrapper">
-      <label for="imageInput" class="file-label">Choose Receipt Photo</label>
-      <input type="file" id="imageInput" accept="image/*" />
-    </div>
-    <button id="runOcrBtn" class="btn-secondary" style="margin-top:.5rem;">Run OCR Again</button>
-    <div id="ocrStatus" class="status"></div>
-  </div>
-
-  <!-- 2. Details -->
-  <div class="card">
-    <h2>2. Extracted Details (Editable)</h2>
+    <!-- Reference Number -->
     <div class="row">
-
-      <div class="col-6">
-        <div class="field-header">
-          <span>Name</span>
-        </div>
-        <input id="nameInput" />
+      <label>Reference Number</label>
+      <div class="inline-row">
+        <input type="text" id="refNo" placeholder="Enter or paste Ref No.">
+        <button class="btn btn-blue btn-small" id="pasteRefBtn">Paste</button>
       </div>
+    </div>
 
-      <div class="col-6">
-        <div class="field-header">
-          <span>Phone Number</span>
-        </div>
-        <input id="numberInput" />
+    <!-- Amount -->
+    <div class="row">
+      <label>Amount</label>
+      <input type="text" id="amount" placeholder="Enter amount (base amount)">
+    </div>
+
+    <!-- Service Fee -->
+    <div class="row">
+      <label>Service Fee (Auto: 2% then down to previous 5, min ₱5)</label>
+      <div class="inline-row">
+        <input type="text" id="serviceFee" placeholder="Auto calculated, editable">
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;">
+          <input type="checkbox" id="feeIncluded">
+          Fee included in amount sent
+        </label>
       </div>
-
-      <div class="col-3">
-        <label>Amount (P)</label>
-        <input id="amountInput" type="number" step="0.01" />
+      <div class="note">
+        If checked: Amount sent = Amount + Fee, Total = Amount (no deduction).<br>
+        If unchecked: Amount sent = Amount, Total = Amount - Fee.
       </div>
+    </div>
 
-      <div class="col-3">
-        <label>Transaction</label>
-        <select id="txOption">
-          <option value="cashin">Cash In</option>
-          <option value="cashout">Cash Out</option>
-        </select>
+    <!-- Total -->
+    <div class="row">
+      <label>Total</label>
+      <input type="text" id="total" readonly>
+    </div>
+
+    <!-- Date -->
+    <div class="row">
+      <label>Date</label>
+      <input type="text" id="dateField" readonly>
+    </div>
+
+    <!-- Time -->
+    <div class="row">
+      <label>Time (12-hr format)</label>
+      <div class="inline-row">
+        <input type="text" id="timeField">
+        <button class="btn btn-gray btn-small" id="timeNowBtn">Now</button>
       </div>
+    </div>
 
-      <div class="col-3">
-        <label>Service Charge (P)</label>
-        <input id="serviceInput" type="number" step="0.01" />
-      </div>
+    <!-- Buttons -->
+    <div class="row">
+      <button class="btn btn-blue btn-wide" id="generateBtn">Generate Receipt</button>
+    </div>
 
-      <div class="col-3">
-        <label>Net Amount (P)</label>
-        <input id="netAmountInput" readonly />
-      </div>
+    <div class="row">
+      <button class="btn btn-red btn-wide" id="clearBtn">Clear</button>
+    </div>
 
-      <div class="col-4">
-        <label>Reference No.</label>
-        <input id="refInput" />
-      </div>
-
-      <div class="col-4">
-        <label>Date &amp; Time (raw)</label>
-        <input id="datetimeInput" />
-      </div>
-
-      <div class="col-4">
-        <label>Original TX Text</label>
-        <input id="transactionInput" />
-      </div>
-
-      <div class="col-12">
-        <label>Raw OCR Text</label>
-        <textarea id="rawText" class="mono"></textarea>
-      </div>
-
+    <!-- Receipt -->
+    <div class="row">
+      <label>Receipt (copy to printer app)</label>
+      <textarea id="receiptText" readonly></textarea>
+      <button class="btn btn-blue btn-wide" id="copyReceiptBtn">Copy Receipt</button>
     </div>
   </div>
 
-  <!-- 3. Receipt -->
-  <div class="card">
-    <h2>3. Receipt Text</h2>
-    <button id="generateReceiptBtn" class="btn-main">Generate Receipt Text</button>
-    <button id="copyReceiptBtn" class="btn-secondary">Copy Receipt</button>
-    <div id="copyStatus" class="status"></div>
-    <textarea id="receiptText" class="mono" style="margin-top:.5rem;"></textarea>
-  </div>
-</div>
-
-<script>
-  const imageInput = document.getElementById('imageInput');
-  const runOcrBtn = document.getElementById('runOcrBtn');
-  const ocrStatus = document.getElementById('ocrStatus');
-
-  const nameInput = document.getElementById('nameInput');
-  const numberInput = document.getElementById('numberInput');
-  const amountInput = document.getElementById('amountInput');
-  const txOption = document.getElementById('txOption');
-  const serviceInput = document.getElementById('serviceInput');
-  const netAmountInput = document.getElementById('netAmountInput');
-  const refInput = document.getElementById('refInput');
-  const datetimeInput = document.getElementById('datetimeInput');
-  const transactionInput = document.getElementById('transactionInput');
-  const rawText = document.getElementById('rawText');
-
-  const generateReceiptBtn = document.getElementById('generateReceiptBtn');
-  const copyReceiptBtn = document.getElementById('copyReceiptBtn');
-  const receiptText = document.getElementById('receiptText');
-  const copyStatus = document.getElementById('copyStatus');
-
-  // --- Formatting helpers ---
-
-  function formatMoney(num) {
-    if (!num || isNaN(num)) return "";
-    return "P " + Number(num).toLocaleString("en-US", { minimumFractionDigits: 2 });
-  }
-
-  function calculateServiceCharge(amount) {
-    if (isNaN(amount) || amount <= 0) return 0;
-    if (amount > 10000) amount = 10000; // cap at 10k
-    return Math.ceil(amount / 250) * 5;
-  }
-
-  function sanitizeName(raw) {
-    if (!raw) return "";
-    let out = "";
-    for (const c of raw) {
-      if (/[A-Za-z]/.test(c)) out += c;
-      else if (c === " ") out += " ";
-      else out += ".";
-    }
-    return out.replace(/\s+/g, " ").trim();
-  }
-
-  function sanitizePhone(raw) {
-    if (!raw) return "";
-    const digits = raw.replace(/[^\d]/g, "");
-    if (!digits) return "";
-    return "+" + digits; // + then digits, no spaces
-  }
-
-  function updateFeeAndNet(autoFee = true) {
-    let amt = parseFloat(amountInput.value);
-    if (isNaN(amt) || amt <= 0) {
-      netAmountInput.value = "";
-      if (autoFee) serviceInput.value = "";
-      return;
+  <script>
+    function parseMoney(str) {
+      if (!str) return 0;
+      const cleaned = String(str).replace(/[^0-9.\-]/g, "");
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : num;
     }
 
-    let fee = parseFloat(serviceInput.value);
-    if (autoFee || isNaN(fee)) {
-      fee = calculateServiceCharge(amt);
-      serviceInput.value = fee;
+    function formatMoney(num) {
+      if (isNaN(num)) num = 0;
+      const parts = Number(num).toFixed(2).split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return parts.join(".");
     }
 
-    const tx = txOption.value;
-    const net = tx === "cashin" ? amt + fee : amt - fee;
-    netAmountInput.value = formatMoney(net);
-  }
-
-  amountInput.addEventListener("input", () => updateFeeAndNet(true));
-  txOption.addEventListener("change", () => updateFeeAndNet(false));
-  serviceInput.addEventListener("input", () => updateFeeAndNet(false));
-
-  // Sanitize manual edits too
-  nameInput.addEventListener("blur", () => {
-    nameInput.value = sanitizeName(nameInput.value);
-  });
-  numberInput.addEventListener("blur", () => {
-    numberInput.value = sanitizePhone(numberInput.value);
-  });
-
-  // --- OCR ---
-
-  async function runOcr() {
-    const file = imageInput.files && imageInput.files[0];
-    if (!file) {
-      alert("Please choose a receipt photo first.");
-      return;
+    function formatDisplayDate(dateObj) {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return months[dateObj.getMonth()] + " " + dateObj.getDate() + ", " + dateObj.getFullYear();
     }
 
-    ocrStatus.innerHTML = "<strong>Running OCR…</strong>";
-    rawText.value = "";
+    function getCurrentTime12h() {
+      const now = new Date();
+      let h = now.getHours();
+      let m = now.getMinutes();
+      const ampm = h >= 12 ? "PM" : "AM";
+      h = h % 12;
+      if (h === 0) h = 12;
+      const hh = h < 10 ? "0" + h : "" + h;
+      const mm = m < 10 ? "0" + m : "" + m;
+      return hh + ":" + mm + " " + ampm;
+    }
 
-    try {
-      const { data } = await Tesseract.recognize(file, "eng", {
-        logger: m => {
-          if (m.status === "recognizing text") {
-            ocrStatus.textContent = `Recognizing… ${(m.progress * 100).toFixed(0)}%`;
-          }
-        }
+    // Compute service fee based on rule
+    function computeServiceFee(amount) {
+      if (!amount || amount <= 0) return 0;
+
+      let feeRaw = amount * 0.02;      // 2%
+      feeRaw = Math.floor(feeRaw);     // remove decimal, no round up
+      let prev5 = Math.floor(feeRaw / 5) * 5; // round down to previous multiple of 5
+      if (prev5 < 5) prev5 = 5;        // minimum ₱5
+      return prev5;
+    }
+
+    function updateFromAmount() {
+      const amount = parseMoney(document.getElementById("amount").value);
+      const included = document.getElementById("feeIncluded").checked;
+
+      if (amount <= 0) {
+        document.getElementById("serviceFee").value = "";
+        document.getElementById("total").value = "";
+        return;
+      }
+
+      const fee = computeServiceFee(amount);
+      document.getElementById("serviceFee").value = formatMoney(fee);
+
+      // If fee included in amount sent → Total = Amount
+      if (included) {
+        document.getElementById("total").value = formatMoney(amount);
+      } else {
+        document.getElementById("total").value = formatMoney(amount - fee);
+      }
+    }
+
+    function updateTotalFromManualFee() {
+      const amount = parseMoney(document.getElementById("amount").value);
+      const fee = parseMoney(document.getElementById("serviceFee").value);
+      const included = document.getElementById("feeIncluded").checked;
+
+      if (amount <= 0 && fee <= 0) {
+        document.getElementById("total").value = "";
+        return;
+      }
+
+      if (included) {
+        document.getElementById("total").value = formatMoney(amount);
+      } else {
+        document.getElementById("total").value = formatMoney(amount - fee);
+      }
+    }
+
+    function initDefaults() {
+      const now = new Date();
+      document.getElementById("dateField").value = formatDisplayDate(now);
+      document.getElementById("timeField").value = getCurrentTime12h();
+    }
+
+    function generateReceipt() {
+      const refNo = document.getElementById("refNo").value.trim();
+      const amountBase = parseMoney(document.getElementById("amount").value); // base amount
+      const fee = parseMoney(document.getElementById("serviceFee").value);
+      const included = document.getElementById("feeIncluded").checked;
+
+      let displayAmount; // what shows in "Amount:" on receipt
+      let displayTotal;  // what shows in "TOTAL:" on receipt
+
+      if (included) {
+        // Fee is included in the amount sent
+        // Amount (receipt) = amountBase + fee (sent via GCash)
+        // TOTAL (receipt) = amountBase (cash received)
+        displayAmount = amountBase + fee;
+        displayTotal = amountBase;
+      } else {
+        // Normal: fee deducted from amount
+        // Amount (receipt) = amountBase (sent via GCash)
+        // TOTAL (receipt) = amountBase - fee (cash received)
+        displayAmount = amountBase;
+        displayTotal = amountBase - fee;
+      }
+
+      const dateStr = document.getElementById("dateField").value;
+      const timeStr = document.getElementById("timeField").value;
+
+      const lines = [
+        "GCASH - CASH OUT",
+        "Date: " + dateStr,
+        "Time: " + timeStr,
+        "-----------------------------",
+        "Ref No.: " + refNo,
+        "-----------------------------",
+        "Amount: P " + formatMoney(displayAmount),
+        "Service Fee: P " + formatMoney(fee),
+        "TOTAL: P " + formatMoney(displayTotal),
+        "-----------------------------",
+        "",
+        "Received by:",
+        "Name: ______________________",
+        "Signature:__________________"
+      ];
+
+      document.getElementById("receiptText").value = lines.join("\n");
+    }
+
+    function copyReceipt() {
+      const txt = document.getElementById("receiptText").value;
+      if (!txt.trim()) {
+        alert("No receipt to copy.");
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => {
+          alert("Receipt copied.");
+        }).catch(() => {
+          const ta = document.getElementById("receiptText");
+          ta.select();
+          document.execCommand("copy");
+          alert("Receipt copied (fallback).");
+        });
+      } else {
+        const ta = document.getElementById("receiptText");
+        ta.select();
+        document.execCommand("copy");
+        alert("Receipt copied.");
+      }
+    }
+
+    function clearAll() {
+      document.getElementById("refNo").value = "";
+      document.getElementById("amount").value = "";
+      document.getElementById("serviceFee").value = "";
+      document.getElementById("total").value = "";
+      document.getElementById("receiptText").value = "";
+      document.getElementById("feeIncluded").checked = false;
+      initDefaults();
+    }
+
+    function pasteRef() {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(text => {
+          document.getElementById("refNo").value = text.trim();
+        }).catch(() => {
+          alert("Cannot read clipboard. Please paste manually (Ctrl+V).");
+          document.getElementById("refNo").focus();
+        });
+      } else {
+        alert("Clipboard not supported. Please paste manually (Ctrl+V).");
+        document.getElementById("refNo").focus();
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initDefaults();
+
+      document.getElementById("amount").addEventListener("input", updateFromAmount);
+      document.getElementById("serviceFee").addEventListener("input", updateTotalFromManualFee);
+      document.getElementById("feeIncluded").addEventListener("change", updateFromAmount);
+
+      document.getElementById("timeNowBtn").addEventListener("click", () => {
+        document.getElementById("timeField").value = getCurrentTime12h();
       });
 
-      const text = (data && data.text) ? data.text : "";
-      rawText.value = text.trim();
-      ocrStatus.innerHTML = "<strong>OCR done. Review fields below.</strong>";
-      parseAndFill(text);
-
-    } catch (err) {
-      console.error(err);
-      ocrStatus.textContent = "Error running OCR.";
-      alert("Something went wrong with OCR. Try again or check the image quality.");
-    }
-  }
-
-  // Auto OCR on file choose
-  imageInput.addEventListener("change", () => {
-    if (imageInput.files && imageInput.files[0]) {
-      runOcr();
-    }
-  });
-  runOcrBtn.addEventListener("click", runOcr);
-
-  // --- Parse text from GCash-like receipt ---
-
-  function parseAndFill(text) {
-    if (!text) return;
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-
-    // PHONE: line containing + and digits
-    let phoneLineIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (/^\+[\d\s\-]+$/.test(lines[i])) {
-        phoneLineIndex = i;
-        break;
-      }
-    }
-    if (phoneLineIndex !== -1) {
-      const rawPhone = lines[phoneLineIndex];
-      numberInput.value = sanitizePhone(rawPhone);
-
-      // NAME: line above phone
-      if (phoneLineIndex > 0) {
-        const rawName = lines[phoneLineIndex - 1];
-        nameInput.value = sanitizeName(rawName);
-      }
-    }
-
-    // REF NO
-    const refMatch = text.match(/Ref\.?\s*No\.?\s*[:\-]?\s*([0-9]{8,})/i);
-    if (refMatch) {
-      refInput.value = refMatch[1];
-    }
-
-    // ===== AMOUNT FIX HERE =====
-    // Try to find amount in "money-related" lines first
-    let rawAmount = null;
-    const moneyRegex = /([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)/;
-
-    for (const line of lines) {
-      // Skip phone and ref lines
-      if (/\+63/.test(line)) continue;
-      if (/ref\.?/i.test(line)) continue;
-
-      if (/(total|amount|sent|received|php|₱|gcash)/i.test(line)) {
-        const m = line.match(moneyRegex);
-        if (m) {
-          rawAmount = m[1].replace(/,/g, "");
-          break;
-        }
-      }
-    }
-
-    // If still not found, scan all numeric matches but skip ones attached to '+'
-    if (!rawAmount) {
-      const allMatches = [...text.matchAll(moneyRegex)];
-      for (const m of allMatches) {
-        const idx = m.index || 0;
-        const before = text.slice(Math.max(0, idx - 3), idx);
-        if (before.includes('+')) continue; // skip +63 etc
-        rawAmount = m[1].replace(/,/g, "");
-        break;
-      }
-    }
-
-    if (rawAmount) {
-      amountInput.value = rawAmount;
-      updateFeeAndNet(true);
-    }
-
-    // DATE + TIME
-    const dtMatch = text.match(/([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}\s*[AP]M)/);
-    if (dtMatch) {
-      datetimeInput.value = dtMatch[1];
-    }
-
-    // ORIGINAL TX LINE: line containing "via GCash"
-    const txLine = lines.find(l => /via\s+GCash/i.test(l));
-    if (txLine) {
-      transactionInput.value = txLine;
-    }
-  }
-
-  // --- Generate receipt ---
-
-  generateReceiptBtn.addEventListener("click", () => {
-    updateFeeAndNet(false); // ensure net is formatted
-
-    const name = nameInput.value.trim();
-    const number = numberInput.value.trim();
-    const amount = formatMoney(amountInput.value);
-    const fee = formatMoney(serviceInput.value);
-    const total = netAmountInput.value.trim();
-    const ref = refInput.value.trim();
-    const rawDt = datetimeInput.value.trim();
-    const txOpt = txOption.value === "cashin" ? "Cash In" : "Cash Out";
-
-    // Split Date / Time from raw datetime
-    let dateStr = "", timeStr = "";
-    const dtRegex = /^(.+?)\s+(\d{1,2}:\d{2}\s*[AP]M)$/i;
-    const m = rawDt.match(dtRegex);
-    if (m) {
-      dateStr = m[1];
-      timeStr = m[2];
-    }
-
-    const lines = [
-      `GCASH ${txOpt.toUpperCase()} RECEIPT`,
-      "-------------------------",
-      name ? `Name        : ${name}` : "",
-      number ? `Number      : ${number}` : "",
-      amount ? `Amount      : ${amount}` : "",
-      fee ? `Service Fee : ${fee}` : "",
-      total ? `Total       : ${total}` : "",
-      ref ? `Ref No.     : ${ref}` : "",
-      dateStr ? `Date        : ${dateStr}` : "",
-      timeStr ? `Time        : ${timeStr}` : "",
-      "-------------------------"
-    ].filter(Boolean);
-
-    if (txOpt === "Cash Out") {
-      lines.push(
-        "",
-        "ACKNOWLEDGEMENT:",
-        "Customer received the cash in full.",
-        "",
-        "Signature: ____________________",
-        "Date:      ____________________"
-      );
-    }
-
-    receiptText.value = lines.join("\n");
-  });
-
-  // --- Copy receipt ---
-
-  copyReceiptBtn.addEventListener("click", async () => {
-    const txt = receiptText.value.trim();
-    if (!txt) {
-      alert("Generate the receipt text first.");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(txt);
-      copyStatus.textContent = "Receipt copied to clipboard.";
-      setTimeout(() => copyStatus.textContent = "", 1500);
-    } catch (err) {
-      console.error(err);
-      alert("Copy failed, please select and copy manually.");
-    }
-  });
-</script>
+      document.getElementById("generateBtn").addEventListener("click", generateReceipt);
+      document.getElementById("copyReceiptBtn").addEventListener("click", copyReceipt);
+      document.getElementById("clearBtn").addEventListener("click", clearAll);
+      document.getElementById("pasteRefBtn").addEventListener("click", pasteRef);
+    });
+  </script>
 </body>
 </html>
