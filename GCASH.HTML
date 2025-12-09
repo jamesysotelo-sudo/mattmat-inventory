@@ -100,7 +100,7 @@
 <body>
   <div class="container">
     <h1>GCASH - CASH OUT</h1>
-    <div class="subtitle">Auto service fee (2% based on 5s) + receipt generator</div>
+    <div class="subtitle">Auto service fee (2% based on 5s) + aligned receipt</div>
 
     <!-- Reference Number -->
     <div class="row">
@@ -114,12 +114,12 @@
     <!-- Amount -->
     <div class="row">
       <label>Amount</label>
-      <input type="text" id="amount" placeholder="Enter amount (base amount)">
+      <input type="text" id="amount" placeholder="Enter amount (example: 1500)">
     </div>
 
     <!-- Service Fee -->
     <div class="row">
-      <label>Service Fee (Auto: 2% then down to previous 5, min ₱5)</label>
+      <label>Service Fee (Auto: 2% → down to previous 5 → min ₱5)</label>
       <div class="inline-row">
         <input type="text" id="serviceFee" placeholder="Auto calculated, editable">
         <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;">
@@ -128,8 +128,8 @@
         </label>
       </div>
       <div class="note">
-        If checked: Amount sent = Amount + Fee, Total = Amount (no deduction).<br>
-        If unchecked: Amount sent = Amount, Total = Amount - Fee.
+        If checked → Customer already paid the fee.<br>
+        If unchecked → Fee deducted from received cash.
       </div>
     </div>
 
@@ -172,6 +172,7 @@
   </div>
 
   <script>
+    // -------- Helpers --------
     function parseMoney(str) {
       if (!str) return 0;
       const cleaned = String(str).replace(/[^0-9.\-]/g, "");
@@ -203,14 +204,16 @@
       return hh + ":" + mm + " " + ampm;
     }
 
-    // Compute service fee based on rule
+    // -------- Fee Logic --------
     function computeServiceFee(amount) {
       if (!amount || amount <= 0) return 0;
 
-      let feeRaw = amount * 0.02;      // 2%
-      feeRaw = Math.floor(feeRaw);     // remove decimal, no round up
-      let prev5 = Math.floor(feeRaw / 5) * 5; // round down to previous multiple of 5
-      if (prev5 < 5) prev5 = 5;        // minimum ₱5
+      let feeRaw = amount * 0.02; // 2%
+      feeRaw = Math.floor(feeRaw); // remove decimals only
+
+      let prev5 = Math.floor(feeRaw / 5) * 5; // previous multiple of 5
+
+      if (prev5 < 5) prev5 = 5;
       return prev5;
     }
 
@@ -227,7 +230,6 @@
       const fee = computeServiceFee(amount);
       document.getElementById("serviceFee").value = formatMoney(fee);
 
-      // If fee included in amount sent → Total = Amount
       if (included) {
         document.getElementById("total").value = formatMoney(amount);
       } else {
@@ -240,11 +242,6 @@
       const fee = parseMoney(document.getElementById("serviceFee").value);
       const included = document.getElementById("feeIncluded").checked;
 
-      if (amount <= 0 && fee <= 0) {
-        document.getElementById("total").value = "";
-        return;
-      }
-
       if (included) {
         document.getElementById("total").value = formatMoney(amount);
       } else {
@@ -252,31 +249,27 @@
       }
     }
 
+    // -------- Init --------
     function initDefaults() {
       const now = new Date();
       document.getElementById("dateField").value = formatDisplayDate(now);
       document.getElementById("timeField").value = getCurrentTime12h();
     }
 
+    // -------- Receipt Generator --------
     function generateReceipt() {
       const refNo = document.getElementById("refNo").value.trim();
-      const amountBase = parseMoney(document.getElementById("amount").value); // base amount
+      const amountBase = parseMoney(document.getElementById("amount").value);
       const fee = parseMoney(document.getElementById("serviceFee").value);
       const included = document.getElementById("feeIncluded").checked;
 
-      let displayAmount; // what shows in "Amount:" on receipt
-      let displayTotal;  // what shows in "TOTAL:" on receipt
+      let displayAmount;
+      let displayTotal;
 
       if (included) {
-        // Fee is included in the amount sent
-        // Amount (receipt) = amountBase + fee (sent via GCash)
-        // TOTAL (receipt) = amountBase (cash received)
         displayAmount = amountBase + fee;
         displayTotal = amountBase;
       } else {
-        // Normal: fee deducted from amount
-        // Amount (receipt) = amountBase (sent via GCash)
-        // TOTAL (receipt) = amountBase - fee (cash received)
         displayAmount = amountBase;
         displayTotal = amountBase - fee;
       }
@@ -284,49 +277,44 @@
       const dateStr = document.getElementById("dateField").value;
       const timeStr = document.getElementById("timeField").value;
 
+      function line(label, value) {
+        return label.padEnd(15, ' ') + value;
+      }
+
       const lines = [
         "GCASH - CASH OUT",
-        "Date: " + dateStr,
-        "Time: " + timeStr,
-        "-----------------------------",
-        "Ref No.: " + refNo,
-        "-----------------------------",
-        "Amount: P " + formatMoney(displayAmount),
-        "Service Fee: P " + formatMoney(fee),
-        "TOTAL: P " + formatMoney(displayTotal),
-        "-----------------------------",
+        "",
+        line("Date:", dateStr),
+        line("Time:", timeStr),
+        "--------------------------",
+        line("Ref No.:", refNo),
+        "--------------------------",
+        line("Amount:", "P " + formatMoney(displayAmount)),
+        line("Service Fee:", "P " + formatMoney(fee)),
+        line("TOTAL:", "P " + formatMoney(displayTotal)),
+        "--------------------------",
         "",
         "Received by:",
-        "Name: ______________________",
-        "Signature:__________________"
+        "Name: ____________________",
+        "Signature:________________"
       ];
 
       document.getElementById("receiptText").value = lines.join("\n");
     }
 
+    // -------- Copy Receipt --------
     function copyReceipt() {
       const txt = document.getElementById("receiptText").value;
       if (!txt.trim()) {
-        alert("No receipt to copy.");
+        alert("No receipt to copy yet.");
         return;
       }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(() => {
-          alert("Receipt copied.");
-        }).catch(() => {
-          const ta = document.getElementById("receiptText");
-          ta.select();
-          document.execCommand("copy");
-          alert("Receipt copied (fallback).");
-        });
-      } else {
-        const ta = document.getElementById("receiptText");
-        ta.select();
-        document.execCommand("copy");
-        alert("Receipt copied.");
-      }
+      navigator.clipboard.writeText(txt).then(() => {
+        alert("Receipt copied!");
+      });
     }
 
+    // -------- Clear --------
     function clearAll() {
       document.getElementById("refNo").value = "";
       document.getElementById("amount").value = "";
@@ -337,20 +325,14 @@
       initDefaults();
     }
 
+    // -------- Paste Ref --------
     function pasteRef() {
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        navigator.clipboard.readText().then(text => {
-          document.getElementById("refNo").value = text.trim();
-        }).catch(() => {
-          alert("Cannot read clipboard. Please paste manually (Ctrl+V).");
-          document.getElementById("refNo").focus();
-        });
-      } else {
-        alert("Clipboard not supported. Please paste manually (Ctrl+V).");
-        document.getElementById("refNo").focus();
-      }
+      navigator.clipboard.readText().then(text => {
+        document.getElementById("refNo").value = text.trim();
+      });
     }
 
+    // -------- Listeners --------
     window.addEventListener("DOMContentLoaded", () => {
       initDefaults();
 
@@ -368,5 +350,6 @@
       document.getElementById("pasteRefBtn").addEventListener("click", pasteRef);
     });
   </script>
+
 </body>
 </html>
