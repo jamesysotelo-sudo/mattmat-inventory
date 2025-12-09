@@ -106,7 +106,7 @@
     <div class="row">
       <label>Reference Number</label>
       <div class="inline-row">
-        <input type="text" id="refNo" placeholder="Enter or paste Ref No.">
+        <input type="text" id="refNo" inputmode="numeric" placeholder="Enter or paste Ref No.">
         <button class="btn btn-blue btn-small" id="pasteRefBtn">Paste</button>
       </div>
     </div>
@@ -114,14 +114,14 @@
     <!-- Amount -->
     <div class="row">
       <label>Amount</label>
-      <input type="text" id="amount" placeholder="Enter amount (example: 1500)">
+      <input type="text" id="amount" inputmode="decimal" placeholder="Enter amount (example: 1500)">
     </div>
 
     <!-- Service Fee -->
     <div class="row">
       <label>Service Fee (Auto: 2% → down to previous 5 → min ₱5)</label>
       <div class="inline-row">
-        <input type="text" id="serviceFee" placeholder="Auto calculated, editable">
+        <input type="text" id="serviceFee" inputmode="decimal" placeholder="Auto calculated, editable">
         <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;">
           <input type="checkbox" id="feeIncluded">
           Fee included in amount sent
@@ -149,7 +149,7 @@
     <div class="row">
       <label>Time (12-hr format)</label>
       <div class="inline-row">
-        <input type="text" id="timeField">
+        <input type="text" id="timeField" placeholder="e.g. 03:45 PM">
         <button class="btn btn-gray btn-small" id="timeNowBtn">Now</button>
       </div>
     </div>
@@ -208,9 +208,8 @@
     function computeServiceFee(amount) {
       if (!amount || amount <= 0) return 0;
 
-      let feeRaw = amount * 0.02; // 2%
-      feeRaw = Math.floor(feeRaw); // remove decimals only
-
+      let feeRaw = amount * 0.02;          // 2%
+      feeRaw = Math.floor(feeRaw);         // remove decimals only
       let prev5 = Math.floor(feeRaw / 5) * 5; // previous multiple of 5
 
       if (prev5 < 5) prev5 = 5;
@@ -267,11 +266,11 @@
       let displayTotal;
 
       if (included) {
-        displayAmount = amountBase + fee;
-        displayTotal = amountBase;
+        displayAmount = amountBase + fee;   // GCash sent
+        displayTotal = amountBase;          // cash received
       } else {
-        displayAmount = amountBase;
-        displayTotal = amountBase - fee;
+        displayAmount = amountBase;         // GCash sent
+        displayTotal = amountBase - fee;    // cash received
       }
 
       const dateStr = document.getElementById("dateField").value;
@@ -286,17 +285,17 @@
         "",
         line("Date:", dateStr),
         line("Time:", timeStr),
-        "--------------------------",
+        "----------------------------",
         line("Ref No.:", refNo),
-        "--------------------------",
+        "----------------------------",
         line("Amount:", "P " + formatMoney(displayAmount)),
         line("Service Fee:", "P " + formatMoney(fee)),
         line("TOTAL:", "P " + formatMoney(displayTotal)),
-        "--------------------------",
+        "----------------------------",
         "",
         "Received by:",
-        "Name: ____________________",
-        "Signature:________________"
+        "Name: ______________________",
+        "Signature:__________________"
       ];
 
       document.getElementById("receiptText").value = lines.join("\n");
@@ -309,9 +308,22 @@
         alert("No receipt to copy yet.");
         return;
       }
-      navigator.clipboard.writeText(txt).then(() => {
-        alert("Receipt copied!");
-      });
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => {
+          alert("Receipt copied!");
+        }).catch(() => {
+          // fallback
+          const ta = document.getElementById("receiptText");
+          ta.select();
+          document.execCommand("copy");
+          alert("Receipt copied (fallback).");
+        });
+      } else {
+        const ta = document.getElementById("receiptText");
+        ta.select();
+        document.execCommand("copy");
+        alert("Receipt copied.");
+      }
     }
 
     // -------- Clear --------
@@ -325,11 +337,28 @@
       initDefaults();
     }
 
-    // -------- Paste Ref --------
+    // -------- Paste Ref (iPhone-friendly) --------
     function pasteRef() {
-      navigator.clipboard.readText().then(text => {
-        document.getElementById("refNo").value = text.trim();
-      });
+      const input = document.getElementById("refNo");
+
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText()
+          .then(text => {
+            if (text) {
+              input.value = text.trim();
+            } else {
+              input.focus();
+              alert("Clipboard is empty. Long press the field then tap Paste.");
+            }
+          })
+          .catch(() => {
+            input.focus();
+            alert("On iPhone: long press the field then tap Paste.");
+          });
+      } else {
+        input.focus();
+        alert("On iPhone: long press the field then tap Paste.");
+      }
     }
 
     // -------- Listeners --------
