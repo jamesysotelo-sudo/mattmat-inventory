@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Amount × QTY Calculator — 58mm Receipt (Uppercase, Indented Second Line)</title>
+  <title>Amount × QTY Calculator — Receipt Header/Footer Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
@@ -391,13 +391,20 @@ function collectPaymentSnapshot(){
 /* Receipt builder — TWO-LINE PER ITEM layout (32 chars width)
    Line 1: ITEM NAME (UPPERCASE) (full width)
    Line 2: (4-space indent) QTY (left) AMOUNT (center) TOTAL (right)
+   Accepts options: { print: true } -> include header/footer; print:false -> exclude them
 */
-function buildReceiptTextFromSnapshot(snap){
+function buildReceiptTextFromSnapshot(snap, opts = { print: false }){
   if(!snap) return '';
+  const printMode = opts.print === true;
+
   const lines = [];
-  // Header centered
-  lines.push(centerText('MATTMAT STORE', RECEIPT_WIDTH));
-  lines.push(centerText('', RECEIPT_WIDTH));
+
+  // Header (only for print)
+  if (printMode) {
+    lines.push(centerText('MATTMAT STORE', RECEIPT_WIDTH));
+    lines.push(centerText('', RECEIPT_WIDTH));
+  }
+
   lines.push(padRight('Date: ' + snap.dateStr, RECEIPT_WIDTH));
   lines.push(padRight('Time: ' + snap.timeStr, RECEIPT_WIDTH));
   lines.push(repeatChar('-', RECEIPT_WIDTH));
@@ -418,7 +425,7 @@ function buildReceiptTextFromSnapshot(snap){
     const amountCol = 10;
     const totalCol = remaining - qtyCol - amountCol; // 12
 
-    const qtyStr = `${it.qty}`; // left
+    const qtyStr = `Q:${it.qty}`; // left
     const amountStr = formatMoneyShort(it.amount); // middle (compact)
     const totalStr = formatMoney(it.subtotal); // right (with space after peso)
 
@@ -436,11 +443,16 @@ function buildReceiptTextFromSnapshot(snap){
   lines.push(padLabelValue('CASH', formatMoney(snap.cash), RECEIPT_WIDTH));
   lines.push(padLabelValue('CHANGE', formatMoney(snap.change), RECEIPT_WIDTH));
   lines.push(repeatChar('-', RECEIPT_WIDTH));
-  lines.push(centerText('Thank you', RECEIPT_WIDTH));
+
+  // Footer (only for print)
+  if (printMode) {
+    lines.push(centerText('Thank you', RECEIPT_WIDTH));
+  }
+
   return lines.join('\n');
 }
 
-/* build receipt UI + preview */
+/* build receipt UI + preview (modal & copy use print:false) */
 function openReceiptForm(snapshot){
   lastPaymentData = snapshot;
   receiptItemsContainer.innerHTML = '';
@@ -455,14 +467,15 @@ function openReceiptForm(snapshot){
     `;
     receiptItemsContainer.appendChild(div);
   });
-  const txt = buildReceiptTextFromSnapshot(snapshot);
-  receiptText.value = txt;
+  // show preview WITHOUT header/footer
+  const txtPreview = buildReceiptTextFromSnapshot(snapshot, { print: false });
+  receiptText.value = txtPreview;
   receiptBackdrop.style.display = 'flex';
 }
 
-/* Copy to clipboard */
+/* Copy to clipboard (no header/footer) */
 document.getElementById('copyReceiptBtn').onclick = ()=>{
-  const txt = buildReceiptTextFromSnapshot(lastPaymentData);
+  const txt = buildReceiptTextFromSnapshot(lastPaymentData, { print: false });
   receiptText.value = txt;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>alert('Receipt copied to clipboard.'));
@@ -473,12 +486,11 @@ document.getElementById('copyReceiptBtn').onclick = ()=>{
   }
 };
 
-/* Print to PDF - opens a print-friendly window sized for 58mm paper */
+/* Print to PDF - includes header & footer (print:true) */
 document.getElementById('printReceiptBtn').onclick = ()=>{
   if(!lastPaymentData){ alert('No receipt data'); return; }
-  const txt = buildReceiptTextFromSnapshot(lastPaymentData);
-  receiptText.value = txt;
-
+  const txt = buildReceiptTextFromSnapshot(lastPaymentData, { print: true });
+  // show print preview with header/footer in new window
   const printHtml = `
   <!doctype html>
   <html>
