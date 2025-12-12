@@ -2,410 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Amount × QTY Calculator (Dark)</title>
-
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-
+  <title>Amount × QTY Calculator — 58mm Receipt (Uppercase, Indented Second Line)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
+    html,body { margin:0; padding:0; background:#000; color:#f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; height:100%; }
+    button{ cursor:pointer; font-family:inherit; }
+    :root { --keypad-height:260px; --max-width:480px; --receipt-width-chars:32; }
 
-    html, body {
-      -webkit-text-size-adjust: 100%;
-      margin: 0;
-      background: #000;
-      color: #f5f5f7;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      overflow-x: hidden;
-    }
+    .page { min-height:100vh; display:flex; justify-content:center; align-items:stretch; padding-bottom:var(--keypad-height); }
+    .app { width:100%; max-width:var(--max-width); padding:12px; display:flex; flex-direction:column; gap:12px; height:calc(100vh - var(--keypad-height)); }
+    h1 { text-align:center; margin:8px 0; font-size:20px; }
+    .totals { display:flex; justify-content:space-between; background:#111; padding:18px 16px; border-radius:12px; font-weight:700; border:1px solid #2a2a2a; }
+    .totals span{ font-size:26px; }
+    .label{ font-size:14px; font-weight:600; color:#a0a0a0; display:block; margin-bottom:4px; }
+    .btn-row{ display:flex; gap:8px; }
+    .btn-main{ flex:1; background:#0a84ff; color:#fff; padding:12px; border-radius:10px; font-weight:600; }
+    .btn-reset{ width:56px; background:#111; color:#fff; font-size:24px; border-radius:10px; border:1px solid #2a2a2a; }
 
-    button {
+    .table-wrap{ flex:1; display:flex; flex-direction:column; min-height:0; gap:8px; }
+    .table{ background:#111; border-radius:10px; padding:8px; border:1px solid #2a2a2a; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    .table-header, .item-row{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:6px; align-items:center; }
+    .table-header{ font-weight:600; color:#b0b0b0; border-bottom:1px solid #2a2a2a; padding-bottom:4px; position:sticky; top:0; background:#111; z-index:1; }
+    .amount-input{ width:100%; padding:10px; font-size:18px; background:#151515; border-radius:8px; border:1px solid #333; text-align:right; color:#fff; }
+    .qty-input{ width:48px; padding:6px; text-align:center; background:#151515; border:1px solid #333; border-radius:6px; color:#fff; font-size:18px; }
+    .row-total{ text-align:right; font-size:16px; font-weight:600; color:#fff; }
+
+    .keypad-fixed{ position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:var(--max-width); height:var(--keypad-height); background:#050505; padding:12px; box-shadow:0 -6px 18px rgba(0,0,0,0.8); border-top:1px solid #181818; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+    .pad-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; flex:1; }
+    .num-key{ padding:14px 0; background:#1c1c1e; color:#fff; border-radius:10px; font-size:22px; border:1px solid #2a2a2a; }
+    .key-secondary{ background:#2c2c2e; } .key-danger{ background:#b00020; } .key-main{ background:#0a84ff; }
+    .num-key[data-key="down"]{ height:120px !important; font-size:32px !important; }
+
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:99999; }
+    .modal{ background:#111; padding:16px; border-radius:16px; width:92%; max-width:420px; border:1px solid #2a2a2a; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,1); }
+    .modal-title{ text-align:center; font-size:20px; font-weight:700; margin-bottom:12px; }
+    .modal-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .summary-box, input.summary-box{ min-width:150px; padding:10px; border-radius:10px; font-size:22px; font-weight:700; text-align:right; background:#1c1c1e; color:#fff; border:1px solid #333; box-sizing:border-box; }
+    input.summary-box{ background:#151515; }
+    .modal-buttons{ display:flex; gap:12px; margin-top:18px; }
+    .modal-buttons .btn-done, .modal-buttons .btn-cancel{ flex:1; padding:16px; font-size:18px; border-radius:12px; font-weight:800; min-height:56px; }
+    .btn-done{ background:#1e8e3e; color:#fff; } .btn-cancel{ background:#333; color:#fff; }
+    .cash-buttons{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px; }
+    .cash-buttons button{ padding:14px 8px; border-radius:12px; font-size:18px; background:#1c1c1e; color:#fff; border:1px solid #333; }
+    .cash-buttons button[data-action="manual"]{ background:#0a84ff; grid-column:span 2; }
+    .cash-buttons button[data-action="clear"]{ background:#b00020; }
+
+    /* Receipt modal specifics */
+    .receipt-item-row{ margin-bottom:10px; padding:8px; border-radius:10px; background:#151515; border:1px solid #2a2a2a; }
+    .receipt-item-row label{ display:block; font-size:13px; color:#a0a0a0; margin-bottom:4px; }
+    .receipt-item-row input{ width:100%; padding:8px; border-radius:8px; border:1px solid #333; background:#111; color:#fff; font-size:15px; margin-bottom:4px; }
+    .receipt-meta{ font-size:13px; color:#ccc; }
+    #receiptText{ width:100%; min-height:220px; margin-top:10px; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#fff; font-family:"Courier New", monospace; font-size:13px; white-space:pre; resize:vertical; }
+
+    /* Larger receipt modal buttons */
+    .receipt-actions { display:flex; gap:10px; margin-top:12px; }
+    .receipt-actions button {
+      flex: 1;
+      min-height: 56px;
+      padding: 14px 12px;
+      font-size: 17px;
+      font-weight: 800;
+      border-radius: 12px;
       border: none;
-      cursor: pointer;
-      font-family: inherit;
-      touch-action: manipulation;
     }
+    .receipt-copy { background: #1e8e3e; color: #fff; border: 1px solid rgba(0,0,0,0.2); }
+    .receipt-print { background: #ff7a00; color: #fff; border: 1px solid rgba(0,0,0,0.2); }
+    .receipt-close { background: #333; color: #fff; border: 1px solid rgba(255,255,255,0.03); }
 
-    .app {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 12px 12px 24px; /* reduced bottom padding since keyboard is in-flow */
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    h1 {
-      text-align: center;
-      margin: 8px 0;
-      font-size: 20px;
-    }
-
-    /* BIG TOTALS */
-    .totals {
-      display: flex;
-      justify-content: space-between;
-      background: #111;
-      padding: 18px 16px;
-      border-radius: 12px;
-      font-weight: 700;
-      margin-bottom: 0;
-      border: 1px solid #2a2a2a;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
-    }
-
-    .totals span {
-      font-size: 26px;
-    }
-
-    .label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #a0a0a0;
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .btn-main {
-      flex: 1;
-      background: #0a84ff;
-      color: #fff;
-      font-size: 16px;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-
-    .btn-reset {
-      width: 56px;
-      background: #111;
-      color: #fff;
-      font-size: 24px;
-      border-radius: 10px;
-      border: 1px solid #2a2a2a;
-    }
-
-    /* TABLE */
-    .table {
-      background: #111;
-      border-radius: 10px;
-      padding: 8px;
-      max-height: 50vh;
-      overflow-y: auto;
-      border: 1px solid #2a2a2a;
-    }
-
-    .table-header,
-    .item-row {
-      display: grid;
-      grid-template-columns: 1.3fr 1fr 1fr;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .table-header {
-      font-weight: 600;
-      color: #b0b0b0;
-      border-bottom: 1px solid #2a2a2a;
-      padding-bottom: 4px;
-      margin-bottom: 4px;
-    }
-
-    .amount-input {
-      width: 100%;
-      padding: 10px;
-      font-size: 18px;
-      background: #151515;
-      border-radius: 8px;
-      border: 1px solid #333;
-      text-align: right;
-      color: #fff;
-    }
-
-    .amount-input::placeholder {
-      color: #555;
-    }
-
-    .item-row.active .amount-input,
-    .item-row.active .qty-input {
-      background: #1f1f1f;
-      border-color: #0a84ff;
-      box-shadow: 0 0 0 2px rgba(10,132,255,0.4);
-    }
-
-    .qty-control {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .qty-input {
-      width: 48px;
-      padding: 6px;
-      text-align: center;
-      background: #151515;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #fff;
-      font-size: 18px;
-    }
-
-    .row-total {
-      text-align: right;
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    /* NUMBER PAD (now in-flow, not floating) */
-    .pad {
-      position: static; /* changed from fixed */
-      margin-top: 8px;
-      width: 100%;
-      background: #050505;
-      padding: 12px;
-      border-radius: 12px;
-      border-top: 1px solid #181818;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.8);
-      z-index: 1;
-    }
-
-    .pad.hidden {
-      display: none;
-    }
-
-    .pad-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .num-key {
-      padding: 16px 0;
-      background: #1c1c1e;
-      color: #fff;
-      border-radius: 10px;
-      font-size: 22px;
-      border: 1px solid #2a2a2a;
-    }
-
-    .key-secondary { background: #2c2c2e; }
-    .key-danger { background: #b00020; }
-    .key-main { background: #0a84ff; }
-
-    .num-key[data-key="down"] {
-      height: 120px !important;
-      font-size: 32px !important;
-    }
-
-    /* MODAL (PAYMENT) */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 99999;
-    }
-
-    .modal {
-      background: #111;
-      padding: 16px;
-      border-radius: 16px;
-      width: 92%;
-      max-width: 420px;
-      border: 1px solid #2a2a2a;
-      color: #fff;
-      box-shadow: 0 8px 24px rgba(0,0,0,1);
-    }
-
-    .modal-title {
-      text-align: center;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .modal-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .summary-box,
-    input.summary-box {
-      min-width: 150px;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 22px;
-      font-weight: 700;
-      text-align: right;
-      background: #1c1c1e;
-      color: #fff;
-      border: 1px solid #333;
-      box-sizing: border-box;
-    }
-
-    input.summary-box {
-      background: #151515;
-    }
-
-    input.summary-box:focus {
-      outline: none;
-      border-color: #0a84ff;
-      box-shadow: 0 0 0 2px rgba(10,132,255,0.4);
-    }
-
-    .change-ok { background: #1e8e3e !important; }
-    .change-bad { background: #b00020 !important; }
-
-    .modal-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .btn-done {
-      flex: 1;
-      background: #1e8e3e;
-      color: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 700;
-    }
-
-    .btn-cancel {
-      flex: 1;
-      background: #333;
-      color: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 700;
-    }
-
-    .cash-buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    /* Bigger cash buttons */
-    .cash-buttons button {
-      padding: 16px 8px;
-      border-radius: 12px;
-      font-size: 18px;
-      background: #1c1c1e;
-      color: #fff;
-      border: 1px solid #333;
-    }
-
-    .cash-buttons button[data-action="manual"] {
-      background: #0a84ff;
-      grid-column: span 2;
-    }
-
-    .cash-buttons button[data-action="clear"] {
-      background: #b00020;
-    }
-
-    /* RECEIPT MODAL */
-    #receiptBackdrop .modal {
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .receipt-item-row {
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 10px;
-      background: #151515;
-      border: 1px solid #2a2a2a;
-    }
-
-    .receipt-item-row label {
-      display: block;
-      font-size: 13px;
-      color: #a0a0a0;
-      margin-bottom: 4px;
-    }
-
-    .receipt-item-row input {
-      width: 100%;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #111;
-      color: #fff;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-
-    .receipt-meta {
-      font-size: 13px;
-      color: #ccc;
-    }
-
-    #receiptText {
-      width: 100%;
-      min-height: 160px;
-      margin-top: 10px;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #000;
-      color: #fff;
-      font-family: "Courier New", monospace;
-      font-size: 13px;
-      white-space: pre;
-      resize: vertical;
-    }
+    @media (max-width:420px){ .num-key{ font-size:20px; padding:12px 0; } .num-key[data-key="down"]{ height:100px !important; } .receipt-actions button{ min-height:48px; font-size:16px; } }
   </style>
 </head>
-
 <body>
+  <div class="page">
+    <div class="app" id="app">
+      <h1>Amount × QTY Calculator</h1>
 
-<div class="app">
-  <h1>Amount × QTY Calculator</h1>
+      <div class="totals">
+        <div><span class="label">Total Amount</span><span id="totalAmount">0.00</span></div>
+        <div style="text-align:right;"><span class="label">Total QTY</span><span id="totalQty">0</span></div>
+      </div>
 
-  <div class="totals">
-    <div>
-      <span class="label">Total Amount</span>
-      <span id="totalAmount">0.00</span>
-    </div>
-    <div style="text-align:right;">
-      <span class="label">Total QTY</span>
-      <span id="totalQty">0</span>
+      <div class="btn-row">
+        <button class="btn-main" id="openSummaryBtn">DONE</button>
+        <button class="btn-reset" id="resetBtn">↻</button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table" id="rowsContainerWrap">
+          <div class="table-header">
+            <div>Amount</div>
+            <div style="text-align:center;">QTY</div>
+            <div style="text-align:right;">Total</div>
+          </div>
+          <div id="rowsContainer"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="btn-row">
-    <button class="btn-main" id="openSummaryBtn">DONE</button>
-    <button class="btn-reset" id="resetBtn">↻</button>
-  </div>
-
-  <div class="table">
-    <div class="table-header">
-      <div>Amount</div>
-      <div style="text-align:center;">QTY</div>
-      <div style="text-align:right;">Total</div>
-    </div>
-    <div id="rowsContainer"></div>
-  </div>
-
-  <!-- NUMBER PAD (now in-flow at bottom of content) -->
-  <div class="pad hidden" id="keypad">
-    <!-- Amount keypad -->
-    <div class="pad-grid pad-grid-amount">
+  <!-- fixed keypad -->
+  <div class="keypad-fixed" id="keypad">
+    <div class="pad-grid pad-grid-amount" id="padAmount">
       <button class="num-key" data-key="7">7</button>
       <button class="num-key" data-key="8">8</button>
       <button class="num-key" data-key="9">9</button>
@@ -427,454 +125,433 @@
       <button class="num-key" data-key=".">.</button>
     </div>
 
-    <!-- QTY keypad: Minus / Plus / Down -->
-    <div class="pad-grid pad-grid-qty" style="display:none;">
+    <div class="pad-grid pad-grid-qty" id="padQty" style="display:none;">
       <button class="num-key key-danger" data-key="qty-minus">-</button>
       <button class="num-key key-main" data-key="qty-plus">+</button>
       <button class="num-key" data-key="qty-down" style="grid-column: span 2;">↓</button>
     </div>
   </div>
-</div>
 
-<!-- PAYMENT MODAL -->
-<div class="modal-backdrop" id="modalBackdrop">
-  <div class="modal">
-    <div class="modal-title">Payment Summary</div>
+  <!-- PAYMENT MODAL -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-title">Payment Summary</div>
 
-    <div class="modal-row">
-      <div>Total Amount:</div>
-      <div id="modalTotalAmount" class="summary-box">0.00</div>
-    </div>
+      <div class="modal-row">
+        <div>Total Amount:</div>
+        <div id="modalTotalAmount" class="summary-box">0.00</div>
+      </div>
 
-    <div class="modal-row">
-      <div>Cash:</div>
-      <input type="number" id="cashInput" class="summary-box" readonly />
-    </div>
+      <div class="modal-row">
+        <div>Cash:</div>
+        <input type="number" id="cashInput" class="summary-box" readonly />
+      </div>
 
-    <div class="modal-row">
-      <div>Change:</div>
-      <div id="changeAmount" class="summary-box">0.00</div>
-    </div>
+      <div class="modal-row">
+        <div>Change:</div>
+        <div id="changeAmount" class="summary-box">0.00</div>
+      </div>
 
-    <div class="cash-buttons">
-      <button data-cash="5">5</button>
-      <button data-cash="10">10</button>
-      <button data-cash="20">20</button>
-      <button data-cash="50">50</button>
+      <div class="cash-buttons">
+        <button data-cash="5">5</button>
+        <button data-cash="10">10</button>
+        <button data-cash="20">20</button>
+        <button data-cash="50">50</button>
 
-      <button data-cash="100">100</button>
-      <button data-cash="500">500</button>
-      <button data-cash="1000">1000</button>
-      <button data-action="clear">Clear</button>
+        <button data-cash="100">100</button>
+        <button data-cash="500">500</button>
+        <button data-cash="1000">1000</button>
+        <button data-action="clear">Clear</button>
 
-      <button data-action="manual">Enter Manually</button>
-    </div>
+        <button data-action="manual">Enter Manually</button>
+      </div>
 
-    <div class="modal-buttons">
-      <button class="btn-done" id="modalDoneBtn">Done</button>
-      <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- RECEIPT MODAL -->
-<div class="modal-backdrop" id="receiptBackdrop">
-  <div class="modal">
-    <div class="modal-title">Receipt Items</div>
-    <div id="receiptItemsContainer"></div>
-
-    <textarea id="receiptText" readonly></textarea>
-
-    <div class="modal-buttons">
-      <button class="btn-done" id="copyReceiptBtn">Copy Receipt</button>
-      <button class="btn-cancel" id="receiptCloseBtn">Close & Reset</button>
+      <div class="modal-buttons">
+        <button class="btn-done" id="modalDoneBtn">Done</button>
+        <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- RECEIPT MODAL -->
+  <div class="modal-backdrop" id="receiptBackdrop">
+    <div class="modal">
+      <div class="modal-title">Receipt Items</div>
+      <div id="receiptItemsContainer"></div>
+
+      <textarea id="receiptText" readonly></textarea>
+
+      <!-- Larger receipt action buttons -->
+      <div class="receipt-actions">
+        <button class="receipt-copy" id="copyReceiptBtn">Copy Receipt</button>
+        <button class="receipt-print" id="printReceiptBtn">Print PDF</button>
+        <button class="receipt-close" id="receiptCloseBtn">Close & Reset</button>
+      </div>
+    </div>
+  </div>
 
 <script>
+/* ===== helpers & global state ===== */
 let activeRowIndex = 0;
 let lastPaymentData = null;
-let padMode = null;
+let padMode = "amount";
+const rowsContainer = document.getElementById('rowsContainer');
+const totalAmountEl = document.getElementById('totalAmount');
+const totalQtyEl = document.getElementById('totalQty');
+const modal = document.getElementById('modalBackdrop');
+const cashInput = document.getElementById('cashInput');
+const changeAmount = document.getElementById('changeAmount');
+const receiptBackdrop = document.getElementById('receiptBackdrop');
+const receiptItemsContainer = document.getElementById('receiptItemsContainer');
+const receiptText = document.getElementById('receiptText');
+const padAmount = document.getElementById('padAmount');
+const padQty = document.getElementById('padQty');
 
-const rowsContainer  = document.getElementById("rowsContainer");
-const totalAmountEl  = document.getElementById("totalAmount");
-const totalQtyEl     = document.getElementById("totalQty");
-const modal          = document.getElementById("modalBackdrop");
-const cashInput      = document.getElementById("cashInput");
-const changeAmount   = document.getElementById("changeAmount");
-const receiptBackdrop       = document.getElementById("receiptBackdrop");
-const receiptItemsContainer = document.getElementById("receiptItemsContainer");
-const receiptText           = document.getElementById("receiptText");
-const keypad        = document.getElementById("keypad");
-const amountPadGrid = document.querySelector(".pad-grid-amount");
-const qtyPadGrid    = document.querySelector(".pad-grid-qty");
+/* 32-character receipt width */
+const RECEIPT_WIDTH = 32;
 
-/* helper: format money with peso sign */
+/* Helpers */
 function formatMoney(n){
   if (isNaN(n)) n = 0;
-  // Use en-PH locale for comma separators
   return "₱ " + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function formatMoneyShort(n){
+  if (isNaN(n)) n = 0;
+  return "₱" + Number(n).toFixed(2);
+}
+function padOrTrim(s, w){ if(s.length > w) return s.slice(0,w); return s + ' '.repeat(w - s.length); }
+function padRight(s, w){ if(s.length > w) return s.slice(0,w); return s + ' '.repeat(w - s.length); }
+function padLeft(s, w){ if(s.length > w) return s.slice(0,w); return ' '.repeat(w - s.length) + s; }
+function centerText(s, w){ if(s.length >= w) return s.slice(0,w); const extra = w - s.length; const left = Math.floor(extra/2); const right = extra - left; return ' '.repeat(left) + s + ' '.repeat(right); }
+function repeatChar(c, count){ return c.repeat(count); }
+function padLabelValue(label, value, w){ const lab = label + ':'; const val = value; const leftWidth = w - val.length; const left = (lab.length > leftWidth) ? lab.slice(0,leftWidth) : lab + ' '.repeat(leftWidth - lab.length); return left + val; }
+function sanitize(s){ return String(s).replace(/\r?\n|\r/g, ' ').replace(/\t/g, ' ').trim(); }
+function escapeHtml(str){ return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* CREATE ROW */
-function createRow(index) {
-  const row = document.createElement("div");
-  row.className = "item-row";
+/* CREATE / MANAGE ROWS */
+function createRow(index){
+  const row = document.createElement('div');
+  row.className = 'item-row';
   row.dataset.index = index;
-
   row.innerHTML = `
-    <div>
-      <input type="text" class="amount-input" readonly placeholder="0.00">
-    </div>
-    <div class="qty-control">
-      <input type="text" class="qty-input" readonly value="1">
-    </div>
+    <div><input type="text" class="amount-input" readonly placeholder="0.00"></div>
+    <div class="qty-control"><input type="text" class="qty-input" readonly value="1"></div>
     <div class="row-total">0.00</div>
   `;
+  const amountInput = row.querySelector('.amount-input');
+  const qtyInput = row.querySelector('.qty-input');
 
-  const amountInput = row.querySelector(".amount-input");
-  const qtyInput    = row.querySelector(".qty-input");
-
-  amountInput.onclick = (e) => {
-    e.stopPropagation();
-    setActiveRow(index);
-    showPad("amount");
-  };
-
-  qtyInput.onclick = (e) => {
-    e.stopPropagation();
-    setActiveRow(index);
-    showPad("qty");
-  };
+  amountInput.onclick = (e) => { e.stopPropagation(); setActiveRow(index); showPad('amount'); };
+  qtyInput.onclick = (e) => { e.stopPropagation(); setActiveRow(index); showPad('qty'); };
 
   return row;
 }
-
-function addRow() {
-  const row = createRow(rowsContainer.children.length);
-  rowsContainer.appendChild(row);
-}
-
-function setActiveRow(index) {
+function addRow(){ rowsContainer.appendChild(createRow(rowsContainer.children.length)); }
+function getRow(index){ return document.querySelector(`.item-row[data-index="${index}"]`); }
+function setActiveRow(index){
   activeRowIndex = index;
-  document.querySelectorAll(".item-row").forEach(r => r.classList.remove("active"));
-  const active = document.querySelector(`.item-row[data-index="${index}"]`);
-  if (active) active.classList.add("active");
+  document.querySelectorAll('.item-row').forEach(r=>r.classList.remove('active'));
+  const active = getRow(index);
+  if(active){
+    active.classList.add('active');
+    const wrap = document.getElementById('rowsContainerWrap');
+    const rRect = active.getBoundingClientRect();
+    const wRect = wrap.getBoundingClientRect();
+    if(rRect.bottom > wRect.bottom || rRect.top < wRect.top){
+      active.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  }
 }
-
-function getRow(index) {
-  return document.querySelector(`.item-row[data-index="${index}"]`);
+function getQtyFromRow(row){
+  const q = row.querySelector('.qty-input').value;
+  return parseInt(q,10) || 0;
 }
-
-function getQtyFromRow(row) {
-  const qtyInput = row.querySelector(".qty-input");
-  return parseInt(qtyInput.value, 10) || 0;
-}
-
-function setQtyForRow(row, qty) {
-  const qtyInput = row.querySelector(".qty-input");
-  qtyInput.value = qty;
-}
-
-function updateRowTotal(index) {
-  const row = getRow(index);
-  if (!row) return;
-  const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
+function setQtyForRow(row, qty){ row.querySelector('.qty-input').value = qty; }
+function updateRowTotal(index){
+  const row = getRow(index); if(!row) return;
+  const amt = parseFloat(row.querySelector('.amount-input').value) || 0;
   const qty = getQtyFromRow(row);
-  row.querySelector(".row-total").textContent = (amt * qty).toFixed(2);
+  row.querySelector('.row-total').textContent = (amt * qty).toFixed(2);
 }
-
-function calculateTotals() {
-  let totalAmt = 0;
-  let totalQty = 0;
-
-  document.querySelectorAll(".item-row").forEach(row => {
-    const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
+function calculateTotals(){
+  let totalAmt = 0, totalQty = 0;
+  document.querySelectorAll('.item-row').forEach(row=>{
+    const amt = parseFloat(row.querySelector('.amount-input').value) || 0;
     const qty = getQtyFromRow(row);
     totalAmt += amt * qty;
     totalQty += qty;
   });
-
   totalAmountEl.textContent = totalAmt.toFixed(2);
-  totalQtyEl.textContent    = totalQty;
+  totalQtyEl.textContent = totalQty;
 }
 
-/* SHOW / HIDE KEYPAD */
-function showPad(mode) {
+/* keypad visibility: keypad fixed; toggle panels */
+function showPad(mode){
   padMode = mode;
-  keypad.classList.remove("hidden");
-  if (mode === "amount") {
-    amountPadGrid.style.display = "grid";
-    qtyPadGrid.style.display = "none";
-  } else if (mode === "qty") {
-    amountPadGrid.style.display = "none";
-    qtyPadGrid.style.display = "grid";
-  }
+  if(mode === 'amount'){ padAmount.style.display = 'grid'; padQty.style.display = 'none'; }
+  else { padAmount.style.display = 'none'; padQty.style.display = 'grid'; }
 }
 
-function hidePad() {
-  keypad.classList.add("hidden");
-  padMode = null;
-}
-
-/* CLICK OUTSIDE TO HIDE KEYPAD */
-document.addEventListener("click", function(e) {
-  const isAmount = e.target.classList.contains("amount-input");
-  const isQty    = e.target.classList.contains("qty-input");
-  const inPad    = e.target.closest(".pad") !== null;
-
-  // Amount/QTY clicks are handled by their own onclick (which stopPropagation)
-  if (!isAmount && !isQty && !inPad) {
-    hidePad();
+/* click outside clears active highlight but keypad stays */
+document.addEventListener('click', function(e){
+  const isAmount = e.target.classList.contains('amount-input');
+  const isQty = e.target.classList.contains('qty-input');
+  const inPad = e.target.closest('.keypad-fixed') !== null;
+  if(!isAmount && !isQty && !inPad){
+    document.querySelectorAll('.item-row').forEach(r=>r.classList.remove('active'));
   }
 });
 
-/* NUMBER PAD */
-function handlePadInput(key) {
+/* numeric pad handling */
+function handlePadInput(key){
   const row = getRow(activeRowIndex);
-  if (!row) return;
-
-  /* QTY mode: use -, +, DOWN from virtual keypad */
-  if (key === "qty-minus" || key === "qty-plus" || key === "qty-down") {
-    if (key === "qty-down") {
-      if (activeRowIndex === rowsContainer.children.length - 1) {
-        addRow();
-      }
-      setActiveRow(activeRowIndex + 1);
-      return;
-    }
-
+  if(!row) return;
+  if(key === 'qty-minus' || key === 'qty-plus' || key === 'qty-down'){
+    if(key === 'qty-down'){ if(activeRowIndex === rowsContainer.children.length - 1) addRow(); setActiveRow(activeRowIndex+1); return; }
     let qty = getQtyFromRow(row);
-    if (key === "qty-minus") {
-      qty = Math.max(0, qty - 1);
-    } else if (key === "qty-plus") {
-      qty = qty + 1;
-    }
-    setQtyForRow(row, qty);
-    updateRowTotal(activeRowIndex);
-    calculateTotals();
-    return;
+    qty = (key === 'qty-minus') ? Math.max(0, qty-1) : qty+1;
+    setQtyForRow(row, qty); updateRowTotal(activeRowIndex); calculateTotals(); return;
   }
-
-  /* Amount mode: numeric keypad */
-  const input = row.querySelector(".amount-input");
-  let value = input.value || "";
-
-  if (key === "back") {
-    value = value.slice(0, -1);
-  } else if (key === "allclear") {
-    const confirmReset = confirm("This will clear all rows and totals. Continue?");
-    if (!confirmReset) return;
-    resetAll();
-    return;
-  } else if (key === "down") {
-    if (activeRowIndex === rowsContainer.children.length - 1) {
-      addRow();
-    }
-    setActiveRow(activeRowIndex + 1);
-    return;
-  } else if (key === ".") {
-    if (!value.includes(".")) value += ".";
-  } else if (key === "00") {
-    if (value !== "") value += "00";
-  } else {
-    value += key;
-  }
-
+  const input = row.querySelector('.amount-input');
+  let value = input.value || '';
+  if(key === 'back'){ value = value.slice(0,-1); }
+  else if(key === 'allclear'){ if(!confirm('This will clear all rows and totals. Continue?')) return; resetAll(); return; }
+  else if(key === 'down'){ if(activeRowIndex === rowsContainer.children.length - 1) addRow(); setActiveRow(activeRowIndex+1); return; }
+  else if(key === '.'){ if(!value.includes('.')) value += '.'; }
+  else if(key === '00'){ if(value !== '') value += '00'; }
+  else { value += key; }
   input.value = value;
-  updateRowTotal(activeRowIndex);
-  calculateTotals();
+  updateRowTotal(activeRowIndex); calculateTotals();
 }
+document.querySelectorAll('.num-key').forEach(btn=> btn.onclick = (e)=>{ e.stopPropagation(); handlePadInput(btn.dataset.key); });
 
-document.querySelectorAll(".num-key").forEach(btn => {
-  btn.onclick = (e) => {
-    e.stopPropagation();
-    handlePadInput(btn.dataset.key);
-  };
-});
-
-/* PAYMENT SUMMARY */
-function setChangeState() {
+/* PAYMENT modal logic and buttons */
+function setChangeState(){
   const total = parseFloat(totalAmountEl.textContent) || 0;
-  const cash  = parseFloat(cashInput.value) || 0;
-  const diff  = cash - total;
-
+  const cash = parseFloat(cashInput.value) || 0;
+  const diff = cash - total;
   changeAmount.textContent = diff.toFixed(2);
-  changeAmount.classList.remove("change-ok", "change-bad");
-
-  if (!total && !cash) return;
-  if (cash < total) changeAmount.classList.add("change-bad");
-  else changeAmount.classList.add("change-ok");
+  changeAmount.classList.remove('change-ok','change-bad');
+  if(!total && !cash) return;
+  if(cash < total) changeAmount.classList.add('change-bad'); else changeAmount.classList.add('change-ok');
 }
 
-document.getElementById("openSummaryBtn").onclick = () => {
-  document.getElementById("modalTotalAmount").textContent = totalAmountEl.textContent;
+/* cash quick buttons behavior */
+function initCashButtons(){
+  const cashButtons = document.querySelectorAll('.cash-buttons button');
+  cashButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const cashVal = btn.dataset.cash;
+      const action = btn.dataset.action;
+      if(cashVal !== undefined){
+        const current = parseFloat(cashInput.value) || 0;
+        cashInput.value = (current + Number(cashVal)).toString();
+        setChangeState(); return;
+      }
+      if(action === 'clear'){ cashInput.value = ''; setChangeState(); return; }
+      if(action === 'manual'){
+        const entry = prompt('Enter cash amount (numbers only):');
+        if(entry === null) return;
+        const n = parseFloat(entry.replace(/,/g,''));
+        if(isNaN(n)){ alert('Invalid amount'); return; }
+        cashInput.value = n.toString(); setChangeState(); return;
+      }
+    });
+  });
+}
+
+/* open modal */
+document.getElementById('openSummaryBtn').onclick = ()=>{
+  document.getElementById('modalTotalAmount').textContent = totalAmountEl.textContent;
   cashInput.readOnly = true;
-  modal.style.display = "flex";
-  hidePad();
+  modal.style.display = 'flex';
 };
-
-document.getElementById("modalCancelBtn").onclick = () => modal.style.display = "none";
-
+/* modal cancel */
+document.getElementById('modalCancelBtn').onclick = () => modal.style.display = 'none';
 cashInput.oninput = setChangeState;
 
-/* COLLECT SNAPSHOT FOR RECEIPT */
-function collectPaymentSnapshot() {
+/* collect payment snapshot for receipt */
+function collectPaymentSnapshot(){
   const items = [];
-  document.querySelectorAll(".item-row").forEach(row => {
-    const amt = parseFloat(row.querySelector(".amount-input").value) || 0;
+  document.querySelectorAll('.item-row').forEach(row=>{
+    const amt = parseFloat(row.querySelector('.amount-input').value) || 0;
     const qty = getQtyFromRow(row);
     const subtotal = amt * qty;
-    if (qty > 0 && amt > 0) {
-      items.push({ amount: amt, qty, subtotal });
-    }
+    if(qty > 0 && amt > 0) items.push({ amount: amt, qty, subtotal });
   });
-
-  const total  = parseFloat(totalAmountEl.textContent) || 0;
-  const cash   = parseFloat(cashInput.value) || 0;
+  const total = parseFloat(totalAmountEl.textContent) || 0;
+  const cash = parseFloat(cashInput.value) || 0;
   const change = parseFloat(changeAmount.textContent) || 0;
-
-  const now    = new Date();
+  const now = new Date();
   const dateStr = now.toLocaleDateString();
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
+  const timeStr = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   return { items, total, cash, change, dateStr, timeStr };
 }
 
-/* RECEIPT FORM */
-function openReceiptForm(snapshot) {
-  lastPaymentData = snapshot;
-  receiptItemsContainer.innerHTML = "";
-  receiptText.value = "";
+/* Receipt builder — TWO-LINE PER ITEM layout (32 chars width)
+   Line 1: ITEM NAME (UPPERCASE) (full width)
+   Line 2: (4-space indent) QTY (left) AMOUNT (center) TOTAL (right)
+*/
+function buildReceiptTextFromSnapshot(snap){
+  if(!snap) return '';
+  const lines = [];
+  // Header centered
+  lines.push(centerText('MATTMAT STORE', RECEIPT_WIDTH));
+  lines.push(centerText('', RECEIPT_WIDTH));
+  lines.push(padRight('Date: ' + snap.dateStr, RECEIPT_WIDTH));
+  lines.push(padRight('Time: ' + snap.timeStr, RECEIPT_WIDTH));
+  lines.push(repeatChar('-', RECEIPT_WIDTH));
 
-  snapshot.items.forEach((item, idx) => {
-    const div = document.createElement("div");
-    div.className = "receipt-item-row";
+  // per-item two-line layout
+  snap.items.forEach((it, idx) => {
+    const nameInput = document.querySelectorAll('.receipt-name-input')[idx];
+    const rawName = nameInput ? nameInput.value.trim() : `Item ${idx+1}`;
+    const name = sanitize(rawName).toUpperCase() || `ITEM ${idx+1}`;
+    // Line 1: item name uppercase, truncated/padded to 32 chars
+    lines.push(padOrTrim(name, RECEIPT_WIDTH));
+
+    // Line 2: indented 4 spaces, then columns within remaining width (28 chars)
+    const indent = ' '.repeat(4);
+    const remaining = RECEIPT_WIDTH - 4; // 28
+    // columns: qtyCol = 6, amountCol = 10, totalCol = remaining - (6+10) = 12
+    const qtyCol = 6;
+    const amountCol = 10;
+    const totalCol = remaining - qtyCol - amountCol; // 12
+
+    const qtyStr = `${it.qty}`; // left
+    const amountStr = formatMoneyShort(it.amount); // middle (compact)
+    const totalStr = formatMoney(it.subtotal); // right (with space after peso)
+
+    const partQty = padRight(qtyStr, qtyCol);
+    const amountCentered = centerText(amountStr, amountCol);
+    const totalRight = padLeft(totalStr, totalCol);
+
+    const secondLineCore = (partQty + amountCentered + totalRight).slice(0, remaining);
+    const secondLine = indent + padOrTrim(secondLineCore, remaining);
+    lines.push(secondLine);
+  });
+
+  lines.push(repeatChar('-', RECEIPT_WIDTH));
+  lines.push(padLabelValue('TOTAL', formatMoney(snap.total), RECEIPT_WIDTH));
+  lines.push(padLabelValue('CASH', formatMoney(snap.cash), RECEIPT_WIDTH));
+  lines.push(padLabelValue('CHANGE', formatMoney(snap.change), RECEIPT_WIDTH));
+  lines.push(repeatChar('-', RECEIPT_WIDTH));
+  lines.push(centerText('Thank you', RECEIPT_WIDTH));
+  return lines.join('\n');
+}
+
+/* build receipt UI + preview */
+function openReceiptForm(snapshot){
+  lastPaymentData = snapshot;
+  receiptItemsContainer.innerHTML = '';
+  receiptText.value = '';
+  snapshot.items.forEach((item, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'receipt-item-row';
     div.innerHTML = `
-      <label>Item ${idx + 1}</label>
-      <input type="text" class="receipt-name-input" data-index="${idx}" placeholder="Item name">
-      <div class="receipt-meta">
-        QTY: ${item.qty} &nbsp;&nbsp; Amount: ${formatMoney(item.amount)} &nbsp;&nbsp; Subtotal: ${formatMoney(item.subtotal)}
-      </div>
+      <label>Item ${idx+1}</label>
+      <input type="text" class="receipt-name-input" data-index="${idx}" placeholder="Item name" />
+      <div class="receipt-meta">QTY: ${item.qty} &nbsp;&nbsp; Amount: ${formatMoney(item.amount)} &nbsp;&nbsp; Subtotal: ${formatMoney(item.subtotal)}</div>
     `;
     receiptItemsContainer.appendChild(div);
   });
-
-  receiptBackdrop.style.display = "flex";
+  const txt = buildReceiptTextFromSnapshot(snapshot);
+  receiptText.value = txt;
+  receiptBackdrop.style.display = 'flex';
 }
 
-function buildReceiptText() {
-  if (!lastPaymentData) return "";
+/* Copy to clipboard */
+document.getElementById('copyReceiptBtn').onclick = ()=>{
+  const txt = buildReceiptTextFromSnapshot(lastPaymentData);
+  receiptText.value = txt;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>alert('Receipt copied to clipboard.'));
+  } else {
+    receiptText.select();
+    document.execCommand('copy');
+    alert('Receipt copied to clipboard.');
+  }
+};
 
-  const snap = lastPaymentData;
-  const names = [];
+/* Print to PDF - opens a print-friendly window sized for 58mm paper */
+document.getElementById('printReceiptBtn').onclick = ()=>{
+  if(!lastPaymentData){ alert('No receipt data'); return; }
+  const txt = buildReceiptTextFromSnapshot(lastPaymentData);
+  receiptText.value = txt;
 
-  document.querySelectorAll(".receipt-name-input").forEach((input, i) => {
-    names[i] = input.value.trim() || `Item ${i + 1}`;
-  });
+  const printHtml = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>Receipt - MATTMAT STORE</title>
+    <style>
+      @page { size: 58mm auto; margin: 4mm; }
+      body { font-family: "Courier New", monospace; font-size:12px; margin:0; padding:0; width:58mm; }
+      pre { white-space: pre; font-family: "Courier New", monospace; font-size:12px; line-height:1.1; margin:0; }
+    </style>
+  </head>
+  <body>
+    <pre>${escapeHtml(txt)}</pre>
+    <script>
+      window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };
+    <\/script>
+  </body>
+  </html>
+  `;
+  const w = window.open('', '_blank');
+  if(!w){ alert('Popup blocked. Allow popups to print.'); return; }
+  w.document.open();
+  w.document.write(printHtml);
+  w.document.close();
+};
 
-  // Create nicely aligned receipt using monospace padding
-  const lines = [];
-  lines.push("------------------------------");
-  lines.push("Item");
-  lines.push("Qty x Amount           Subtotal");
-  lines.push("------------------------------");
-
-  snap.items.forEach((item, i) => {
-    // Left column: name (max 18 chars)
-    const name = (names[i].length > 18) ? names[i].slice(0, 18) : names[i];
-    const nameCol = name.padEnd(18, ' ');
-
-    // Middle: qty x amount (e.g. "2 x ₱ 1,000.00") keep short, but we will right align subtotal
-    const qtyAmt = item.qty + " x " + formatMoney(item.amount);
-    // Subtotal formatted
-    const sub = formatMoney(item.subtotal);
-    // Build line with name (18 chars) + a space + qtyAmt truncated/padded to 10 + subtotal right aligned 12
-    const qtyAmtCol = qtyAmt.length > 10 ? qtyAmt.slice(0,10) : qtyAmt.padEnd(10, ' ');
-    const subtotalCol = sub.padStart(12, ' ');
-    lines.push(nameCol + " " + qtyAmtCol + subtotalCol);
-  });
-
-  lines.push("------------------------------");
-  lines.push("TOTAL:" + " ".repeat(20) + formatMoney(snap.total).padStart(12, ' '));
-  lines.push("CASH:"  + " ".repeat(21) + formatMoney(snap.cash).padStart(12, ' '));
-  lines.push("CHANGE:" + " ".repeat(18) + formatMoney(snap.change).padStart(12, ' '));
-  lines.push("------------------------------");
-
-  // add date/time
-  lines.push("Date: " + snap.dateStr + "  Time: " + snap.timeStr);
-
-  return lines.join("\n");
-}
-
-/* Done button in payment modal */
-document.getElementById("modalDoneBtn").onclick = () => {
+/* Done in payment modal */
+document.getElementById('modalDoneBtn').onclick = ()=>{
   const snapshot = collectPaymentSnapshot();
-  const wantReceipt = confirm("Payment complete. Do you want to create a receipt?");
-
-  modal.style.display = "none";
-
-  if (wantReceipt && snapshot.items.length > 0) {
+  const wantReceipt = confirm('Payment complete. Do you want to create a receipt?');
+  modal.style.display = 'none';
+  if(wantReceipt && snapshot.items.length > 0){
     openReceiptForm(snapshot);
   } else {
     resetAll();
   }
 };
 
-/* Copy receipt button */
-document.getElementById("copyReceiptBtn").onclick = () => {
-  const text = buildReceiptText();
-  if (!text) {
-    alert("No data to generate receipt.");
-    return;
-  }
-  receiptText.value = text;
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      alert("Receipt copied to clipboard.");
-    }).catch(() => {
-      receiptText.select();
-      document.execCommand("copy");
-      alert("Receipt copied to clipboard.");
-    });
-  } else {
-    receiptText.select();
-    document.execCommand("copy");
-    alert("Receipt copied to clipboard.");
-  }
-};
-
-/* Close receipt + reset */
-document.getElementById("receiptCloseBtn").onclick = () => {
-  receiptBackdrop.style.display = "none";
+/* receipt close & reset */
+document.getElementById('receiptCloseBtn').onclick = ()=>{
+  receiptBackdrop.style.display = 'none';
   resetAll();
 };
 
-/* RESET */
-function resetAll() {
-  rowsContainer.innerHTML = "";
+/* Close modal helper */
+document.getElementById('modalCancelBtn').onclick = ()=> modal.style.display = 'none';
+
+/* Reset & init */
+function resetAll(){
+  rowsContainer.innerHTML = '';
   addRow();
   setActiveRow(0);
   calculateTotals();
-  cashInput.value = "";
-  changeAmount.textContent = "0.00";
-  changeAmount.classList.remove("change-ok", "change-bad");
+  cashInput.value = '';
+  changeAmount.textContent = '0.00';
+  changeAmount.classList.remove('change-ok','change-bad');
   lastPaymentData = null;
-  hidePad();
+  showPad('amount');
 }
 
-/* Top reset with warning */
-document.getElementById("resetBtn").onclick = () => {
-  const confirmReset = confirm("This will clear all rows and totals. Continue?");
-  if (!confirmReset) return;
+/* Top reset button */
+document.getElementById('resetBtn').onclick = ()=>{
+  if(!confirm('This will clear all rows and totals. Continue?')) return;
   resetAll();
 };
 
-/* INIT */
-resetAll();
+/* init keypad listeners, init cash buttons */
+function init(){
+  initCashButtons();
+  resetAll();
+}
+init();
 </script>
-
 </body>
 </html>
