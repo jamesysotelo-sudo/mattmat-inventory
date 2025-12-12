@@ -29,8 +29,11 @@
     .app {
       max-width: 480px;
       margin: 0 auto;
-      padding: 12px 12px 180px;
+      padding: 12px 12px 24px; /* reduced bottom padding since keyboard is in-flow */
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     h1 {
@@ -47,7 +50,7 @@
       padding: 18px 16px;
       border-radius: 12px;
       font-weight: 700;
-      margin-bottom: 14px;
+      margin-bottom: 0;
       border: 1px solid #2a2a2a;
       box-shadow: 0 2px 6px rgba(0,0,0,0.8);
     }
@@ -94,7 +97,7 @@
       background: #111;
       border-radius: 10px;
       padding: 8px;
-      max-height: 60vh;
+      max-height: 50vh;
       overflow-y: auto;
       border: 1px solid #2a2a2a;
     }
@@ -161,19 +164,17 @@
       color: #fff;
     }
 
-    /* NUMBER PAD */
+    /* NUMBER PAD (now in-flow, not floating) */
     .pad {
-      position: fixed;
-      bottom: 0; left: 50%;
-      transform: translateX(-50%);
+      position: static; /* changed from fixed */
+      margin-top: 8px;
       width: 100%;
-      max-width: 480px;
       background: #050505;
       padding: 12px;
-      border-radius: 16px 16px 0 0;
+      border-radius: 12px;
       border-top: 1px solid #181818;
-      box-shadow: 0 -4px 12px rgba(0,0,0,1);
-      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      z-index: 1;
     }
 
     .pad.hidden {
@@ -400,38 +401,38 @@
     </div>
     <div id="rowsContainer"></div>
   </div>
-</div>
 
-<!-- NUMBER PAD -->
-<div class="pad hidden" id="keypad">
-  <!-- Amount keypad -->
-  <div class="pad-grid pad-grid-amount">
-    <button class="num-key" data-key="7">7</button>
-    <button class="num-key" data-key="8">8</button>
-    <button class="num-key" data-key="9">9</button>
-    <button class="num-key key-secondary" data-key="back">⌫</button>
+  <!-- NUMBER PAD (now in-flow at bottom of content) -->
+  <div class="pad hidden" id="keypad">
+    <!-- Amount keypad -->
+    <div class="pad-grid pad-grid-amount">
+      <button class="num-key" data-key="7">7</button>
+      <button class="num-key" data-key="8">8</button>
+      <button class="num-key" data-key="9">9</button>
+      <button class="num-key key-secondary" data-key="back">⌫</button>
 
-    <button class="num-key" data-key="4">4</button>
-    <button class="num-key" data-key="5">5</button>
-    <button class="num-key" data-key="6">6</button>
-    <button class="num-key key-danger" data-key="allclear">AC</button>
+      <button class="num-key" data-key="4">4</button>
+      <button class="num-key" data-key="5">5</button>
+      <button class="num-key" data-key="6">6</button>
+      <button class="num-key key-danger" data-key="allclear">AC</button>
 
-    <button class="num-key" data-key="1">1</button>
-    <button class="num-key" data-key="2">2</button>
-    <button class="num-key" data-key="3">3</button>
+      <button class="num-key" data-key="1">1</button>
+      <button class="num-key" data-key="2">2</button>
+      <button class="num-key" data-key="3">3</button>
 
-    <button class="num-key key-main" data-key="down" style="grid-row: span 2;">↓</button>
+      <button class="num-key key-main" data-key="down" style="grid-row: span 2;">↓</button>
 
-    <button class="num-key" data-key="0">0</button>
-    <button class="num-key" data-key="00">00</button>
-    <button class="num-key" data-key=".">.</button>
-  </div>
+      <button class="num-key" data-key="0">0</button>
+      <button class="num-key" data-key="00">00</button>
+      <button class="num-key" data-key=".">.</button>
+    </div>
 
-  <!-- QTY keypad: Minus / Plus / Down -->
-  <div class="pad-grid pad-grid-qty" style="display:none;">
-    <button class="num-key key-danger" data-key="qty-minus">-</button>
-    <button class="num-key key-main" data-key="qty-plus">+</button>
-    <button class="num-key" data-key="qty-down" style="grid-column: span 2;">↓</button>
+    <!-- QTY keypad: Minus / Plus / Down -->
+    <div class="pad-grid pad-grid-qty" style="display:none;">
+      <button class="num-key key-danger" data-key="qty-minus">-</button>
+      <button class="num-key key-main" data-key="qty-plus">+</button>
+      <button class="num-key" data-key="qty-down" style="grid-column: span 2;">↓</button>
+    </div>
   </div>
 </div>
 
@@ -508,6 +509,13 @@ const receiptText           = document.getElementById("receiptText");
 const keypad        = document.getElementById("keypad");
 const amountPadGrid = document.querySelector(".pad-grid-amount");
 const qtyPadGrid    = document.querySelector(".pad-grid-qty");
+
+/* helper: format money with peso sign */
+function formatMoney(n){
+  if (isNaN(n)) n = 0;
+  // Use en-PH locale for comma separators
+  return "₱ " + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 /* CREATE ROW */
 function createRow(index) {
@@ -711,29 +719,6 @@ document.getElementById("modalCancelBtn").onclick = () => modal.style.display = 
 
 cashInput.oninput = setChangeState;
 
-/* Cash quick buttons */
-document.querySelectorAll(".cash-buttons button").forEach(btn => {
-  btn.onclick = () => {
-    const add    = parseFloat(btn.dataset.cash || "0");
-    const action = btn.dataset.action || "";
-
-    if (add) {
-      let cash = parseFloat(cashInput.value || 0);
-      cash += add;
-      cashInput.value = cash.toFixed(2);
-      setChangeState();
-    } else if (action === "clear") {
-      cashInput.value = "";
-      changeAmount.textContent = "0.00";
-      changeAmount.classList.remove("change-ok", "change-bad");
-    } else if (action === "manual") {
-      cashInput.readOnly = false;
-      cashInput.focus();
-      cashInput.select && cashInput.select();
-    }
-  };
-});
-
 /* COLLECT SNAPSHOT FOR RECEIPT */
 function collectPaymentSnapshot() {
   const items = [];
@@ -770,7 +755,7 @@ function openReceiptForm(snapshot) {
       <label>Item ${idx + 1}</label>
       <input type="text" class="receipt-name-input" data-index="${idx}" placeholder="Item name">
       <div class="receipt-meta">
-        QTY: ${item.qty} &nbsp;&nbsp; Amount: ${item.amount.toFixed(2)} &nbsp;&nbsp; Subtotal: ${item.subtotal.toFixed(2)}
+        QTY: ${item.qty} &nbsp;&nbsp; Amount: ${formatMoney(item.amount)} &nbsp;&nbsp; Subtotal: ${formatMoney(item.subtotal)}
       </div>
     `;
     receiptItemsContainer.appendChild(div);
@@ -789,24 +774,36 @@ function buildReceiptText() {
     names[i] = input.value.trim() || `Item ${i + 1}`;
   });
 
+  // Create nicely aligned receipt using monospace padding
   const lines = [];
   lines.push("------------------------------");
   lines.push("Item");
-  lines.push("Qty x Amount\tSubtotal");
+  lines.push("Qty x Amount           Subtotal");
   lines.push("------------------------------");
 
   snap.items.forEach((item, i) => {
-    lines.push(names[i]);
-    const qtyPart = item.qty + " x " + item.amount.toFixed(2);
-    const subPart = item.subtotal.toFixed(2);
-    lines.push(qtyPart + "\t" + subPart);
+    // Left column: name (max 18 chars)
+    const name = (names[i].length > 18) ? names[i].slice(0, 18) : names[i];
+    const nameCol = name.padEnd(18, ' ');
+
+    // Middle: qty x amount (e.g. "2 x ₱ 1,000.00") keep short, but we will right align subtotal
+    const qtyAmt = item.qty + " x " + formatMoney(item.amount);
+    // Subtotal formatted
+    const sub = formatMoney(item.subtotal);
+    // Build line with name (18 chars) + a space + qtyAmt truncated/padded to 10 + subtotal right aligned 12
+    const qtyAmtCol = qtyAmt.length > 10 ? qtyAmt.slice(0,10) : qtyAmt.padEnd(10, ' ');
+    const subtotalCol = sub.padStart(12, ' ');
+    lines.push(nameCol + " " + qtyAmtCol + subtotalCol);
   });
 
   lines.push("------------------------------");
-  lines.push("TOTAL:\t" + snap.total.toFixed(2));
-  lines.push("CASH:\t" + snap.cash.toFixed(2));
-  lines.push("CHANGE:\t" + snap.change.toFixed(2));
+  lines.push("TOTAL:" + " ".repeat(20) + formatMoney(snap.total).padStart(12, ' '));
+  lines.push("CASH:"  + " ".repeat(21) + formatMoney(snap.cash).padStart(12, ' '));
+  lines.push("CHANGE:" + " ".repeat(18) + formatMoney(snap.change).padStart(12, ' '));
   lines.push("------------------------------");
+
+  // add date/time
+  lines.push("Date: " + snap.dateStr + "  Time: " + snap.timeStr);
 
   return lines.join("\n");
 }
@@ -881,4 +878,3 @@ resetAll();
 
 </body>
 </html>
-
