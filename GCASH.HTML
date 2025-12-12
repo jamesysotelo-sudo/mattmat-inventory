@@ -2,383 +2,306 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>GCASH Cash Out Service</title>
+  <title>GCASH Cash Out — 32-char fixed receipt (restored UI)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f4f4f4;
-      font-family: Arial, sans-serif;
-    }
-
-    .container {
-      max-width: 480px;
-      margin: 20px auto;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 4px;
-      font-size: 1.4rem;
-    }
-
-    .subtitle {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #666;
-      margin-bottom: 16px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 10px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      outline: none;
-    }
-
-    input[type="text"]:focus,
-    textarea:focus {
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.15);
-    }
-
-    textarea {
-      min-height: 180px;
-      resize: vertical;
-      font-family: "Courier New", monospace;
-      white-space: pre;
-    }
-
-    .row { margin-bottom: 12px; }
-
-    .inline-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .btn {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .btn-blue { background: #007bff; }
-    .btn-gray { background: #6c757d; }
-    .btn-red { background: #dc3545; }
-
-    .btn-wide { width: 100%; }
-    .btn-small { font-size: 0.8rem; padding: 6px 10px; }
-
-    .note {
-      font-size: 0.75rem;
-      color: #777;
-      margin-top: 4px;
-    }
+    body { margin:0; padding:18px; background:#f4f4f4; font-family: Arial, Helvetica, sans-serif; }
+    .container { max-width:760px; margin:0 auto; background:#fff; padding:16px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+    h1 { margin:0 0 8px; font-size:1.2rem; text-align:center; }
+    .subtitle { text-align:center; color:#666; margin-bottom:12px; font-size:0.9rem; }
+    label { display:block; font-weight:600; margin-top:10px; margin-bottom:6px; }
+    input[type="text"], textarea { width:100%; padding:10px; font-size:1rem; border:1px solid #ccc; border-radius:6px; outline:none; }
+    textarea { min-height:180px; font-family:"Courier New", monospace; white-space: pre; }
+    .inline-row { display:flex; gap:8px; align-items:center; }
+    .btn { padding:8px 12px; border-radius:6px; color:#fff; border:none; cursor:pointer; font-size:0.9rem; }
+    .btn-blue { background:#007bff } .btn-gray { background:#6c757d } .btn-red { background:#dc3545 }
+    .btn-wide { width:100% } .btn-small { font-size:0.82rem; padding:6px 10px; }
+    .note { font-size:0.85rem; color:#666; margin-top:6px; }
+    .receipt-preview { font-family:"Courier New", monospace; font-size:13px; line-height:1.15; white-space: pre; background:#fff; padding:10px; border-radius:6px; border:1px solid #ddd; margin-top:10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>GCASH - CASH OUT</h1>
-    <div class="subtitle">Auto service fee (2% based on 5s) + aligned receipt</div>
+    <div class="subtitle">32-char thermal receipt (58mm) • All lines exactly 32 chars</div>
 
-    <!-- Reference Number -->
-    <div class="row">
-      <label>Reference Number</label>
-      <div class="inline-row">
-        <input type="text" id="refNo" inputmode="numeric" placeholder="Enter or paste Ref No.">
-        <button class="btn btn-blue btn-small" id="pasteRefBtn">Paste</button>
-      </div>
+    <label>Reference Number</label>
+    <div class="inline-row">
+      <input type="text" id="refNo" inputmode="text" placeholder="Enter or paste Ref No.">
+      <button id="pasteRefBtn" class="btn btn-blue btn-small">Paste</button>
     </div>
 
-    <!-- Amount -->
-    <div class="row">
-      <label>Amount</label>
-      <input type="text" id="amount" inputmode="decimal" placeholder="Enter amount (example: 1500)">
+    <label>Amount (GCash Sent)</label>
+    <input type="text" id="amount" inputmode="decimal" placeholder="e.g. 1500">
+
+    <label>Service Fee</label>
+    <div class="inline-row">
+      <input type="text" id="serviceFee" inputmode="decimal" placeholder="Auto-calculated (editable)">
+      <label style="font-size:0.9rem;"><input type="checkbox" id="feeIncluded"> Fee included in amount</label>
+    </div>
+    <div class="note">If checked → customer already paid the fee. If unchecked → fee deducted from received cash.</div>
+
+    <label>Total (Cash Received)</label>
+    <input type="text" id="total" readonly>
+
+    <label>Date</label>
+    <input type="text" id="dateField" readonly>
+
+    <label>Time</label>
+    <div class="inline-row">
+      <input type="text" id="timeField" placeholder="03:45 PM">
+      <button id="timeNowBtn" class="btn btn-gray btn-small">Now</button>
     </div>
 
-    <!-- Service Fee -->
-    <div class="row">
-      <label>Service Fee (Auto: 2% → down to previous 5 → min ₱5)</label>
-      <div class="inline-row">
-        <input type="text" id="serviceFee" inputmode="decimal" placeholder="Auto calculated, editable">
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;">
-          <input type="checkbox" id="feeIncluded">
-          Fee included in amount sent
-        </label>
-      </div>
-      <div class="note">
-        If checked → Customer already paid the fee.<br>
-        If unchecked → Fee deducted from received cash.
-      </div>
+    <div style="margin-top:12px;">
+      <button id="generateBtn" class="btn btn-blue btn-wide">Generate Receipt</button>
+    </div>
+    <div style="margin-top:8px;">
+      <button id="clearBtn" class="btn btn-red btn-wide">Clear</button>
     </div>
 
-    <!-- Total -->
-    <div class="row">
-      <label>Total</label>
-      <input type="text" id="total" readonly>
-    </div>
+    <label style="margin-top:12px;">Receipt (copy to thermal app)</label>
+    <textarea id="receiptText" readonly></textarea>
+    <button id="copyReceiptBtn" class="btn btn-blue btn-wide" style="margin-top:8px;">Copy Receipt</button>
 
-    <!-- Date -->
-    <div class="row">
-      <label>Date</label>
-      <input type="text" id="dateField" readonly>
-    </div>
-
-    <!-- Time -->
-    <div class="row">
-      <label>Time (12-hr format)</label>
-      <div class="inline-row">
-        <input type="text" id="timeField" placeholder="e.g. 03:45 PM">
-        <button class="btn btn-gray btn-small" id="timeNowBtn">Now</button>
-      </div>
-    </div>
-
-    <!-- Buttons -->
-    <div class="row">
-      <button class="btn btn-blue btn-wide" id="generateBtn">Generate Receipt</button>
-    </div>
-
-    <div class="row">
-      <button class="btn btn-red btn-wide" id="clearBtn">Clear</button>
-    </div>
-
-    <!-- Receipt -->
-    <div class="row">
-      <label>Receipt (copy to printer app)</label>
-      <textarea id="receiptText" readonly></textarea>
-      <button class="btn btn-blue btn-wide" id="copyReceiptBtn">Copy Receipt</button>
+    <div style="margin-top:12px;">
+      <div class="note">Preview (| markers show line start/end — each line is exactly 32 chars):</div>
+      <div id="preview" class="receipt-preview"></div>
     </div>
   </div>
 
-  <script>
-    // -------- Helpers --------
-    function parseMoney(str) {
-      if (!str) return 0;
-      const cleaned = String(str).replace(/[^0-9.\-]/g, "");
-      const num = parseFloat(cleaned);
-      return isNaN(num) ? 0 : num;
-    }
+<script>
+/* ========== Configuration ========== */
+const LINE_WIDTH = 32;       // total characters per line
+const RIGHT_COL_WIDTH = 13;  // reserved width for money column (adjusted after testing)
 
-    function formatMoney(num) {
-      if (isNaN(num)) num = 0;
-      const parts = Number(num).toFixed(2).split(".");
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      return parts.join(".");
-    }
+/* ========== Helpers ========== */
+function parseMoney(s){
+  if(!s) return 0;
+  const cleaned = String(s).replace(/[^0-9.\-]/g, "");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+function formatMoney(n){
+  if(isNaN(n)) n = 0;
+  const parts = Number(n).toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join('.');
+}
+// pad left (for right-aligned column)
+function padLeft(txt, width){
+  txt = String(txt);
+  if(txt.length >= width) return txt.slice(-width);
+  return " ".repeat(width - txt.length) + txt;
+}
+function padRight(txt, width){
+  txt = String(txt);
+  if(txt.length >= width) return txt.slice(0, width);
+  return txt + " ".repeat(width - txt.length);
+}
+// keep rightmost characters when truncating (so decimals preserved)
+function rightTruncateKeepEnd(txt, width){
+  txt = String(txt);
+  if(txt.length <= width) return txt;
+  return txt.slice(txt.length - width);
+}
+// ensure exact LINE_WIDTH
+function fixLineLength(line){
+  if(line.length === LINE_WIDTH) return line;
+  if(line.length < LINE_WIDTH) return line + " ".repeat(LINE_WIDTH - line.length);
+  return line.slice(0, LINE_WIDTH);
+}
 
-    function formatDisplayDate(dateObj) {
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      return months[dateObj.getMonth()] + " " + dateObj.getDate() + ", " + dateObj.getFullYear();
-    }
+/* ========== Service fee logic (keeps original behavior) ========== */
+function computeServiceFee(amount){
+  if(!amount || amount <= 0) return 0;
+  let feeRaw = amount * 0.02;
+  feeRaw = Math.floor(feeRaw);
+  let prev5 = Math.floor(feeRaw / 5) * 5;
+  if(prev5 < 5) prev5 = 5;
+  return prev5;
+}
 
-    function getCurrentTime12h() {
-      const now = new Date();
-      let h = now.getHours();
-      let m = now.getMinutes();
-      const ampm = h >= 12 ? "PM" : "AM";
-      h = h % 12;
-      if (h === 0) h = 12;
-      const hh = h < 10 ? "0" + h : "" + h;
-      const mm = m < 10 ? "0" + m : "" + m;
-      return hh + ":" + mm + " " + ampm;
-    }
+/* ========== Receipt builders ========== */
+// Build a line where the right column occupies RIGHT_COL_WIDTH and the total line width is LINE_WIDTH
+function receiptLine(left, right){
+  left = left == null ? "" : String(left);
+  right = right == null ? "" : String(right);
 
-    // -------- Fee Logic --------
-    function computeServiceFee(amount) {
-      if (!amount || amount <= 0) return 0;
+  // prepare right column (keep rightmost characters, then left-pad to RIGHT_COL_WIDTH)
+  const rightRaw = rightTruncateKeepEnd(right, RIGHT_COL_WIDTH);
+  const rightCol = padLeft(rightRaw, RIGHT_COL_WIDTH);
 
-      let feeRaw = amount * 0.02;          // 2%
-      feeRaw = Math.floor(feeRaw);         // remove decimals only
-      let prev5 = Math.floor(feeRaw / 5) * 5; // previous multiple of 5
+  // left max length = LINE_WIDTH - RIGHT_COL_WIDTH - at least 1 space
+  const maxLeft = Math.max(0, LINE_WIDTH - RIGHT_COL_WIDTH - 1);
+  const leftSafe = left.length > maxLeft ? left.slice(0, maxLeft - 1) + "…" : left;
 
-      if (prev5 < 5) prev5 = 5;
-      return prev5;
-    }
+  // spaces to fill the rest
+  const spacesNeeded = LINE_WIDTH - leftSafe.length - rightCol.length;
+  const between = spacesNeeded > 0 ? " ".repeat(spacesNeeded) : "";
 
-    function updateFromAmount() {
-      const amount = parseMoney(document.getElementById("amount").value);
-      const included = document.getElementById("feeIncluded").checked;
+  return fixLineLength(leftSafe + between + rightCol);
+}
 
-      if (amount <= 0) {
-        document.getElementById("serviceFee").value = "";
-        document.getElementById("total").value = "";
-        return;
-      }
+function centerLine(txt){
+  txt = txt == null ? "" : String(txt);
+  if(txt.length >= LINE_WIDTH) return fixLineLength(txt);
+  const pad = Math.floor((LINE_WIDTH - txt.length) / 2);
+  return fixLineLength(" ".repeat(pad) + txt + " ".repeat(LINE_WIDTH - pad - txt.length));
+}
+function dashLine(){ return "-".repeat(LINE_WIDTH); }
+function underlineAfterLabel(label){
+  label = label == null ? "" : String(label);
+  const maxLabel = LINE_WIDTH - 1;
+  const labelSafe = label.length > maxLabel ? label.slice(0, maxLabel - 1) + "…" : label;
+  const remain = LINE_WIDTH - labelSafe.length - 1;
+  const underline = remain > 0 ? "_".repeat(remain) : "";
+  return fixLineLength(labelSafe + " " + underline);
+}
 
-      const fee = computeServiceFee(amount);
-      document.getElementById("serviceFee").value = formatMoney(fee);
+/* ========== Generate receipt text (strict 32-char lines) ========== */
+function generateReceiptText(){
+  const refNo = document.getElementById("refNo").value.trim() || "-";
+  const amountBase = parseMoney(document.getElementById("amount").value);
+  const manualFee = parseMoney(document.getElementById("serviceFee").value);
+  const feeIncluded = document.getElementById("feeIncluded").checked;
 
-      if (included) {
-        document.getElementById("total").value = formatMoney(amount);
-      } else {
-        document.getElementById("total").value = formatMoney(amount - fee);
-      }
-    }
+  const computedFee = computeServiceFee(amountBase);
+  const fee = manualFee > 0 ? manualFee : computedFee;
 
-    function updateTotalFromManualFee() {
-      const amount = parseMoney(document.getElementById("amount").value);
-      const fee = parseMoney(document.getElementById("serviceFee").value);
-      const included = document.getElementById("feeIncluded").checked;
+  // follow previous behavior: when feeIncluded is true, displayAmount = amountBase + fee; displayTotal = amountBase
+  let displayAmount, displayTotal;
+  if(feeIncluded){
+    displayAmount = amountBase + fee;
+    displayTotal = amountBase;
+  } else {
+    displayAmount = amountBase;
+    displayTotal = amountBase - fee;
+  }
 
-      if (included) {
-        document.getElementById("total").value = formatMoney(amount);
-      } else {
-        document.getElementById("total").value = formatMoney(amount - fee);
-      }
-    }
+  const amtStr = "P " + formatMoney(displayAmount);
+  const feeStr = "P " + formatMoney(fee);
+  const totStr = "P " + formatMoney(displayTotal);
 
-    // -------- Init --------
-    function initDefaults() {
-      const now = new Date();
-      document.getElementById("dateField").value = formatDisplayDate(now);
-      document.getElementById("timeField").value = getCurrentTime12h();
-    }
+  const now = new Date();
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dateStr = months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+  const timeStr = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 
-    // -------- Receipt Generator --------
-    function generateReceipt() {
-      const refNo = document.getElementById("refNo").value.trim();
-      const amountBase = parseMoney(document.getElementById("amount").value);
-      const fee = parseMoney(document.getElementById("serviceFee").value);
-      const included = document.getElementById("feeIncluded").checked;
+  const lines = [];
+  lines.push(centerLine("GCASH - CASH OUT"));
+  lines.push(fixLineLength("")); // blank
+  lines.push(receiptLine("Date:", dateStr));  // date on its own line
+  lines.push(receiptLine("Time:", timeStr));  // time on its own line
+  lines.push(dashLine());
+  lines.push(receiptLine("Ref No.:", refNo));
+  lines.push(dashLine());
+  lines.push(receiptLine("Amount:", amtStr));
+  lines.push(receiptLine("Service Fee:", feeStr));
+  lines.push(receiptLine("TOTAL:", totStr));
+  lines.push(dashLine());
+  lines.push(fixLineLength("")); // blank
+  lines.push(fixLineLength("Received by:")); // plain label
+  lines.push(underlineAfterLabel("Name:"));
+  lines.push(underlineAfterLabel("Signature:"));
 
-      let displayAmount;
-      let displayTotal;
+  // Ensure every line is exactly LINE_WIDTH and join
+  return lines.map(fixLineLength).join("\n");
+}
 
-      if (included) {
-        displayAmount = amountBase + fee;   // GCash sent
-        displayTotal = amountBase;          // cash received
-      } else {
-        displayAmount = amountBase;         // GCash sent
-        displayTotal = amountBase - fee;    // cash received
-      }
+/* ========== UI helpers ========== */
+function renderPreviewAndTextarea(txt){
+  const preview = txt.split("\n").map(l => "|" + l + "|").join("\n");
+  document.getElementById("preview").textContent = preview;
+  document.getElementById("receiptText").value = txt;
+}
 
-      const dateStr = document.getElementById("dateField").value;
-      const timeStr = document.getElementById("timeField").value;
+function copyReceipt(){
+  const txt = document.getElementById("receiptText").value;
+  if(!txt.trim()){ alert("No receipt to copy."); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=> alert("Receipt copied!"));
+  } else {
+    const ta = document.getElementById("receiptText");
+    ta.select(); document.execCommand("copy"); alert("Receipt copied (fallback).");
+  }
+}
 
-      function line(label, value) {
-        return label.padEnd(15, ' ') + value;
-      }
+function updateFromAmount(){
+  const amount = parseMoney(document.getElementById("amount").value);
+  const included = document.getElementById("feeIncluded").checked;
+  if(amount <= 0){
+    document.getElementById("serviceFee").value = "";
+    document.getElementById("total").value = "";
+    renderPreviewAndTextarea((" ".repeat(LINE_WIDTH) + "\n").repeat(12));
+    return;
+  }
+  const fee = computeServiceFee(amount);
+  document.getElementById("serviceFee").value = formatMoney(fee);
+  if(included) document.getElementById("total").value = formatMoney(amount);
+  else document.getElementById("total").value = formatMoney(amount - fee);
+}
 
-      const lines = [
-        "GCASH - CASH OUT",
-        "",
-        line("Date:", dateStr),
-        line("Time:", timeStr),
-        "----------------------------",
-        line("Ref No.:", refNo),
-        "----------------------------",
-        line("Amount:", "P " + formatMoney(displayAmount)),
-        line("Service Fee:", "P " + formatMoney(fee)),
-        line("TOTAL:", "P " + formatMoney(displayTotal)),
-        "----------------------------",
-        "",
-        "Received by:",
-        "Name: ______________________",
-        "Signature:__________________"
-      ];
+function updateTotalFromManualFee(){
+  const amount = parseMoney(document.getElementById("amount").value);
+  const fee = parseMoney(document.getElementById("serviceFee").value);
+  const included = document.getElementById("feeIncluded").checked;
+  if(included) document.getElementById("total").value = formatMoney(amount);
+  else document.getElementById("total").value = formatMoney(amount - fee);
+}
 
-      document.getElementById("receiptText").value = lines.join("\n");
-    }
+function initDefaults(){
+  const now = new Date();
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  document.getElementById("dateField").value = months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+  document.getElementById("timeField").value = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+}
 
-    // -------- Copy Receipt --------
-    function copyReceipt() {
-      const txt = document.getElementById("receiptText").value;
-      if (!txt.trim()) {
-        alert("No receipt to copy yet.");
-        return;
-      }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(() => {
-          alert("Receipt copied!");
-        }).catch(() => {
-          // fallback
-          const ta = document.getElementById("receiptText");
-          ta.select();
-          document.execCommand("copy");
-          alert("Receipt copied (fallback).");
-        });
-      } else {
-        const ta = document.getElementById("receiptText");
-        ta.select();
-        document.execCommand("copy");
-        alert("Receipt copied.");
-      }
-    }
+/* ========== Event bindings ========== */
+window.addEventListener("DOMContentLoaded", () => {
+  initDefaults();
+  renderPreviewAndTextarea((" ".repeat(LINE_WIDTH) + "\n").repeat(12));
 
-    // -------- Clear --------
-    function clearAll() {
-      document.getElementById("refNo").value = "";
-      document.getElementById("amount").value = "";
-      document.getElementById("serviceFee").value = "";
-      document.getElementById("total").value = "";
-      document.getElementById("receiptText").value = "";
-      document.getElementById("feeIncluded").checked = false;
-      initDefaults();
-    }
+  document.getElementById("amount").addEventListener("input", updateFromAmount);
+  document.getElementById("serviceFee").addEventListener("input", updateTotalFromManualFee);
+  document.getElementById("feeIncluded").addEventListener("change", updateFromAmount);
 
-    // -------- Paste Ref (iPhone-friendly) --------
-    function pasteRef() {
-      const input = document.getElementById("refNo");
+  document.getElementById("timeNowBtn").addEventListener("click", () => {
+    const now = new Date();
+    document.getElementById("timeField").value = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  });
 
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        navigator.clipboard.readText()
-          .then(text => {
-            if (text) {
-              input.value = text.trim();
-            } else {
-              input.focus();
-              alert("Clipboard is empty. Long press the field then tap Paste.");
-            }
-          })
-          .catch(() => {
-            input.focus();
-            alert("On iPhone: long press the field then tap Paste.");
-          });
-      } else {
+  document.getElementById("generateBtn").addEventListener("click", () => {
+    const txt = generateReceiptText();
+    renderPreviewAndTextarea(txt);
+  });
+
+  document.getElementById("copyReceiptBtn").addEventListener("click", copyReceipt);
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    document.getElementById("refNo").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("serviceFee").value = "";
+    document.getElementById("total").value = "";
+    document.getElementById("feeIncluded").checked = false;
+    initDefaults();
+    renderPreviewAndTextarea((" ".repeat(LINE_WIDTH) + "\n").repeat(12));
+  });
+
+  document.getElementById("pasteRefBtn").addEventListener("click", () => {
+    const input = document.getElementById("refNo");
+    if(navigator.clipboard && navigator.clipboard.readText){
+      navigator.clipboard.readText().then(t => input.value = t || "").catch(() => {
         input.focus();
-        alert("On iPhone: long press the field then tap Paste.");
-      }
-    }
-
-    // -------- Listeners --------
-    window.addEventListener("DOMContentLoaded", () => {
-      initDefaults();
-
-      document.getElementById("amount").addEventListener("input", updateFromAmount);
-      document.getElementById("serviceFee").addEventListener("input", updateTotalFromManualFee);
-      document.getElementById("feeIncluded").addEventListener("change", updateFromAmount);
-
-      document.getElementById("timeNowBtn").addEventListener("click", () => {
-        document.getElementById("timeField").value = getCurrentTime12h();
+        alert("Unable to read clipboard. On iPhone long-press then Paste.");
       });
-
-      document.getElementById("generateBtn").addEventListener("click", generateReceipt);
-      document.getElementById("copyReceiptBtn").addEventListener("click", copyReceipt);
-      document.getElementById("clearBtn").addEventListener("click", clearAll);
-      document.getElementById("pasteRefBtn").addEventListener("click", pasteRef);
-    });
-  </script>
-
+    } else {
+      input.focus();
+      alert("Unable to read clipboard. On iPhone long-press then Paste.");
+    }
+  });
+});
+</script>
 </body>
 </html>
